@@ -147,10 +147,11 @@ create policy "Users can insert their own prompts"
     on public.prompts for insert
     with check (auth.uid() = user_id);
 
--- Update: Own prompts
+-- Update: Own prompts (SECURITY FIX: Added WITH CHECK)
 create policy "Users can update their own prompts"
     on public.prompts for update
-    using (auth.uid() = user_id);
+    using (auth.uid() = user_id)
+    with check (auth.uid() = user_id);
 
 -- Delete: Own prompts
 create policy "Users can delete their own prompts"
@@ -186,23 +187,29 @@ create policy "Authenticated users can flag prompts"
     on public.prompt_flags for insert
     with check (auth.uid() = reporter_id);
 
+-- Read: Users can see their own flags (SECURITY FIX: Added select policy)
+create policy "Users can view their own flags"
+    on public.prompt_flags for select
+    using (auth.uid() = reporter_id);
+
 -- Featured Prompts
 -- Read: Public
 create policy "Featured prompts are publicly readable"
     on public.featured_prompts for select
     using (true);
 
--- Triggers for updated_at
+-- Triggers for updated_at AND updated_by (SECURITY FIX: Auto-set updated_by)
 
-create or replace function public.set_updated_at()
+create or replace function public.set_updated_fields()
 returns trigger as $$
 begin
     new.updated_at = now();
+    new.updated_by = auth.uid();
     return new;
 end;
 $$ language plpgsql;
 
-create trigger trg_prompts_updated_at
+create trigger trg_prompts_updated_fields
     before update on public.prompts
     for each row
-    execute function public.set_updated_at();
+    execute function public.set_updated_fields();
