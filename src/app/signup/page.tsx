@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -9,7 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
-export default function LoginPage() {
+const isLocalDev = (): boolean => {
+    if (typeof window === "undefined") return false;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    return (
+        supabaseUrl.includes("localhost") ||
+        supabaseUrl.includes("127.0.0.1") ||
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+    );
+};
+
+export default function SignUpPage() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -17,12 +27,10 @@ export default function LoginPage() {
     const { providers: oauthProviders, isLoading: oauthLoading } = useOAuthProviders();
 
     const handleOAuthLogin = async (provider: "google" | "github") => {
-        // Check if provider is available
         if (!oauthProviders[provider]) {
             alert(
                 `OAuth with ${provider === "google" ? "Google" : "GitHub"} is not configured. ` +
-                `Please use email/password authentication or configure OAuth in your Supabase instance. ` +
-                `See documentation for self-hosting setup.`
+                `Please use email/password authentication or configure OAuth in your Supabase instance.`
             );
             return;
         }
@@ -38,40 +46,58 @@ export default function LoginPage() {
             if (error) throw error;
         } catch (error) {
             console.error("Authentication error:", error);
-            alert(
-                `Failed to sign in with ${provider === "google" ? "Google" : "GitHub"}. ` +
-                `Please try email/password authentication or check your OAuth configuration.`
-            );
+            alert(`Failed to sign in with ${provider}.`);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleEmailLogin = async (e: React.FormEvent) => {
+    const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             setLoading(true);
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                },
             });
+
             if (error) throw error;
-            // Redirect happens via middleware/auth state change usually, or manually:
-            window.location.href = "/";
+
+            if (data.user && data.session) {
+                // User is immediately signed in (auto-confirmed)
+                window.location.href = "/";
+            } else if (data.user) {
+                // User created but needs email confirmation
+                if (isLocalDev()) {
+                    alert(
+                        "Account created! Please check InBucket at http://localhost:54324 " +
+                        "for the confirmation email link, or sign in directly if email confirmation is disabled."
+                    );
+                } else {
+                    alert("Account created! Please check your email for the confirmation link.");
+                }
+            } else {
+                alert("Signup completed but user data is missing. Please try signing in.");
+            }
         } catch (error) {
-            console.error("Login error:", error);
-            alert("Login failed. Check console for details.");
+            console.error("Signup error:", error);
+            const errorMessage = error instanceof Error ? error.message : "Signup failed.";
+            alert(`Signup failed: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center py-2">
             <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-                <h1 className="text-4xl font-bold mb-8">Sign in to PromptManager</h1>
+                <h1 className="text-4xl font-bold mb-8">Create an Account</h1>
+                <p className="mb-8 text-muted-foreground">Join PromptManager to start organizing your prompts.</p>
 
-                <form onSubmit={handleEmailLogin} className="flex flex-col gap-4 w-full max-w-xs mb-8 text-left">
+                <form onSubmit={handleSignUp} className="flex flex-col gap-4 w-full max-w-xs mb-8 text-left">
                     <div>
                         <Label htmlFor="email">Email</Label>
                         <Input
@@ -91,10 +117,11 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            minLength={6}
                         />
                     </div>
                     <Button type="submit" disabled={loading} className="w-full">
-                        {loading ? "..." : "Sign In"}
+                        {loading ? "Creating Account..." : "Sign Up"}
                     </Button>
                 </form>
 
@@ -114,19 +141,10 @@ export default function LoginPage() {
                             disabled={loading || !oauthProviders.github || oauthLoading}
                             className="w-full"
                             variant="outline"
-                            title={
-                                !oauthProviders.github
-                                    ? "GitHub OAuth is not configured. See self-hosting documentation for setup instructions."
-                                    : undefined
-                            }
+                            type="button"
                         >
                             {loading ? "Loading..." : "GitHub"}
                         </Button>
-                        {!oauthProviders.github && !oauthLoading && (
-                            <p className="text-xs text-muted-foreground mt-1 text-center">
-                                GitHub OAuth not configured
-                            </p>
-                        )}
                     </div>
                     <div className="relative">
                         <Button
@@ -134,26 +152,17 @@ export default function LoginPage() {
                             disabled={loading || !oauthProviders.google || oauthLoading}
                             className="w-full"
                             variant="outline"
-                            title={
-                                !oauthProviders.google
-                                    ? "Google OAuth is not configured. See self-hosting documentation for setup instructions."
-                                    : undefined
-                            }
+                            type="button"
                         >
                             {loading ? "Loading..." : "Google"}
                         </Button>
-                        {!oauthProviders.google && !oauthLoading && (
-                            <p className="text-xs text-muted-foreground mt-1 text-center">
-                                Google OAuth not configured
-                            </p>
-                        )}
                     </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                    Don&apos;t have an account?{" "}
-                    <Link href="/signup" className="underline hover:text-primary">
-                        Sign Up
+                    Already have an account?{" "}
+                    <Link href="/login" className="underline hover:text-primary">
+                        Sign In
                     </Link>
                 </p>
             </main>

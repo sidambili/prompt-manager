@@ -22,7 +22,11 @@ export async function GET(request: Request) {
             } else {
                 return NextResponse.redirect(`${origin}${next}`)
             }
+        } else {
+            console.error("Auth callback error: Code exchange failed", error);
         }
+    } else {
+        console.error("Auth callback error: No code provided in query params");
     }
 
     // return the user to an error page with instructions
