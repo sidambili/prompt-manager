@@ -1,8 +1,8 @@
 # FINAL MVP CHECKLIST FOR CURSOR
 
-## PHASE 0 — Repo & Environment Setup
+## PHASE 0 — Repo & Environment Setup [DONE]
 
-### Task 0.1 — Initialize Repository
+### Task 0.1 — Initialize Repository [DONE]
 
 * Create Next.js app (App Router)
 * Configure Tailwind CSS
@@ -16,7 +16,7 @@ Deliverables:
 
 ---
 
-### Task 0.2 — Supabase Local Setup
+### Task 0.2 — Supabase Local Setup [DONE]
 
 * Add Supabase CLI config
 * Enable local Supabase via Docker
@@ -36,9 +36,9 @@ Deliverables:
 
 ---
 
-## PHASE 1 — Database & Security Foundation (CRITICAL)
+## PHASE 1 — Database & Security Foundation (CRITICAL) [DONE]
 
-### Task 1.1 — Create Database Schema
+### Task 1.1 — Create Database Schema [DONE]
 
 Implement SQL migrations for:
 
@@ -56,7 +56,7 @@ Deliverables:
 
 ---
 
-### Task 1.2 — Enable Row Level Security (RLS)
+### Task 1.2 — Enable Row Level Security (RLS) [DONE]
 
 Add RLS policies for:
 
@@ -75,7 +75,7 @@ Deliverables:
 
 ---
 
-### Task 1.3 — Triggers & Defaults
+### Task 1.3 — Triggers & Defaults [DONE]
 
 * `updated_at` trigger
 * Revision creation on update (or app-layer equivalent)
@@ -87,9 +87,9 @@ Deliverables:
 
 ---
 
-## PHASE 2 — Authentication & User Context
+## PHASE 2 — Authentication & User Context [DONE]
 
-### Task 2.1 — OAuth Authentication
+### Task 2.1 — OAuth Authentication [DONE]
 
 * Integrate Supabase Auth
 * Enable Google + GitHub OAuth
@@ -103,7 +103,7 @@ Deliverables:
 
 ---
 
-### Task 2.2 — User Profile Context
+### Task 2.2 — User Profile Context [DONE]
 
 * Global auth provider
 * Fetch current user
