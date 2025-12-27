@@ -1,33 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PromptManager
+
+An open-source, self-hostable prompt management platform for automation engineers and developers.
+
+## Features
+
+- **Prompt Management**: Create, edit, and organize AI prompts
+- **Version Control**: Track revisions and history
+- **Forking & Remixing**: Fork prompts with attribution
+- **Variable Support**: Use variables in prompts with live preview
+- **Public & Private**: Control visibility of your prompts
+- **Self-Hostable**: Deploy on your own infrastructure
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ and npm
+- Supabase account (cloud or self-hosted)
+
+### Local Development
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-org/prompt-manager.git
+cd prompt-manager
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+# Copy the example file
+cp .env.example .env.local
+
+# Edit .env.local with your Supabase credentials
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_DEPLOYMENT_MODE=cloud
+```
+
+4. Set up Supabase:
+```bash
+# Start local Supabase (requires Docker)
+# Uses config.toml with email confirmation disabled for local dev
+npx supabase start
+
+# Or link to cloud project
+npx supabase link --project-ref your-project-ref
+
+# Run migrations
+npx supabase db push
+
+# Seed data (optional)
+npx supabase db seed
+```
+
+**Note:** For production deployment with Supabase Cloud, configure authentication settings via the Supabase Dashboard. See [Self-Hosting Guide](docs/SELF_HOSTING.md).
+
+5. Run the development server:
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Authentication
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+PromptManager supports multiple authentication methods:
+
+- **Email/Password**: Always available, works out of the box
+- **OAuth Providers** (Google, GitHub): Requires configuration in self-hosted environments
+
+For self-hosted deployments, OAuth providers need to be configured in your Supabase instance. The application automatically detects OAuth availability and shows/hides OAuth buttons accordingly.
+
+See the [Self-Hosting Guide](docs/SELF_HOSTING.md) for detailed authentication setup instructions.
+
+## Self-Hosting
+
+PromptManager is designed to be self-hostable. For detailed self-hosting instructions, including OAuth configuration, see the [Self-Hosting Guide](docs/SELF_HOSTING.md).
+
+### Quick Self-Hosting Steps
+
+1. Clone the repository
+2. Set up Supabase (self-hosted or cloud)
+3. Configure environment variables
+4. Run database migrations
+5. Build and deploy
+
+See [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) for complete instructions.
+
+## Documentation
+
+- [Product Requirements Document](docs/PRD.md)
+- [Architecture Documentation](docs/ARCHITECTURE.md)
+- [Self-Hosting Guide](docs/SELF_HOSTING.md)
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
 
 ## Deploy on Vercel
 

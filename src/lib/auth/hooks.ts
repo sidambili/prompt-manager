@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getOAuthProviders, getOAuthProvidersSync } from "./config";
+import { getOAuthProviders } from "./config";
 
 interface OAuthProviderAvailability {
     google: boolean;
@@ -15,46 +14,15 @@ interface UseOAuthProvidersResult {
 
 /**
  * React hook to get OAuth provider availability.
- * Checks environment variables first, then falls back to runtime detection.
- * Results are cached to avoid repeated checks.
+ * Reads from environment variables synchronously.
+ * isLoading is always false since no async detection is needed.
  */
 export const useOAuthProviders = (): UseOAuthProvidersResult => {
-    const [providers, setProviders] = useState<OAuthProviderAvailability>(() => {
-        // Try to get sync value first (from env vars or cache)
-        const syncProviders = getOAuthProvidersSync();
-        if (syncProviders !== null) {
-            return syncProviders;
-        }
-        // Default to false while loading
-        return { google: false, github: false };
-    });
+    // Configuration is now purely from environment variables, no async needed.
+    const providers = getOAuthProviders();
 
-    const [isLoading, setIsLoading] = useState(() => {
-        // If we have a sync value, we're not loading
-        return getOAuthProvidersSync() === null;
-    });
-
-    useEffect(() => {
-        // If we already have providers from sync, skip async detection
-        if (getOAuthProvidersSync() !== null) {
-            return;
-        }
-
-        // Otherwise, perform async detection
-        setIsLoading(true);
-        getOAuthProviders()
-            .then((detectedProviders) => {
-                setProviders(detectedProviders);
-                setIsLoading(false);
-            })
-            .catch((error) => {
-                console.error("Failed to detect OAuth providers:", error);
-                // On error, default to false (safer for self-hosted)
-                setProviders({ google: false, github: false });
-                setIsLoading(false);
-            });
-    }, []);
-
-    return { providers, isLoading };
+    return {
+        providers,
+        isLoading: false,
+    };
 };
-
