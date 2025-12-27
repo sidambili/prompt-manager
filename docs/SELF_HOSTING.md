@@ -164,7 +164,54 @@ The `NEXT_PUBLIC_DEPLOYMENT_MODE` variable provides sensible defaults for differ
 
 ---
 
+## Common Setup Recipes
+
+### 1. Local Development + Managed Supabase
+**Goal**: Run the app on your computer, but use the real Supabase cloud for database and Auth.
+
+1.  **Environment Variables**: In `.env.local`, use your Supabase Cloud URL and Anon Key.
+2.  **Migrations**: To run migrations on your cloud project:
+    -   `npx supabase link --project-ref your-project-ref`
+    -   `npx supabase db push`
+3.  **Auth**: Ensure your Local Site URL (`http://localhost:3000`) is added to the Supabase Dashboard > Authentication > URL Configuration.
+
+### 2. Private VPS + Self-Hosted App
+**Goal**: Deploy the app to your own server (DigitalOcean, AWS, Hetzner) using Docker or PM2.
+
+1.  **Supabase**: Use Supabase Cloud (easiest) or self-host Supabase on the same VPS using their [Docker Guide](https://supabase.com/docs/guides/self-hosting/docker).
+2.  **App**: Build the Next.js app on the VPS:
+    -   `npm run build`
+    -   `npm start` (or use `pm2 start npm -- name "app" -- start`)
+3.  **Reverse Proxy**: Use Nginx or Caddy to handle SSL and forward traffic to port 3000.
+
+### 3. Pure Local Development
+**Goal**: Everything runs on your machine, including Supabase (via Docker).
+
+1.  **Start**: `npx supabase start`
+2.  **Logic**: Fast iteration. Schema changes are automatically applied from `supabase/migrations`.
+3.  **Emails**: Captured locally by InBucket.
+
+### 4. Managed Supabase + Large Public App (1000+ Users)
+**Goal**: Scale to many users without managing database infrastructure.
+
+1.  **Scaling**: Supabase handles connection pooling (PgBouncer) and high availability.
+2.  **Security**: 
+    -   Enable **Email Confirmation**.
+    -   Set up a production SMTP provider (Resend, Postmark).
+    -   Strict RLS policies on all tables.
+3.  **Deployment**: Vercel or a globally distributed platform for the frontend is recommended for low latency.
+
+---
+
 ## Troubleshooting
+
+### "Privileges" Error during `supabase link`
+
+If you see `Your account does not have the necessary privileges to access this endpoint`:
+
+1.  **Reset Session**: Run `npx supabase logout` then `npx supabase login`. This is the most common fix for token expiration.
+2.  **Check Project Ref**: Ensure the Project Ref is exactly what you see in the Supabase URL: `supabase.com/dashboard/project/abc-123-xyz`.
+3.  **Permissions**: Verify you are the Owner or have "Full Access" to the project in the Supabase Organization settings.
 
 ### OAuth Buttons Missing or Disabled
 
