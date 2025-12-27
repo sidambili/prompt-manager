@@ -1,4 +1,5 @@
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -10,7 +11,9 @@ export default function Home() {
           Manage, version, and share your AI prompts effectively.
         </p>
         <div className="flex gap-4">
-          <Button variant="default">Get Started</Button>
+          <Link href="/login">
+            <Button variant="default">Get Started</Button>
+          </Link>
           <Button variant="outline">Documentation</Button>
         </div>
       </main>
