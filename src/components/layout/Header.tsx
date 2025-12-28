@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CreatePromptModal from "@/components/prompts/CreatePromptModal";
 
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+
 export default function Header() {
     const { user } = useAuth();
     const supabase = createClient();
@@ -61,6 +63,8 @@ export default function Header() {
                         </Button>
                     }
                 />
+
+                <ThemeToggle />
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
