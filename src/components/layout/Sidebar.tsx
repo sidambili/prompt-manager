@@ -4,9 +4,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, LayoutDashboard, Database, Star, Clock, Trash2, Folder } from "lucide-react";
+import { ChevronRight, LayoutDashboard, Database, Star, Clock, Trash2, Folder, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/layout/AuthProvider";
 import {
     Accordion,
     AccordionContent,
@@ -30,6 +31,7 @@ interface Category {
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const { user } = useAuth();
     const [categories, setCategories] = useState<Category[]>([]);
     const supabase = createClient();
 
@@ -56,78 +58,70 @@ export default function Sidebar() {
     ];
 
     return (
-        <aside className="fixed left-0 top-14 z-30 hidden h-[calc(100vh-3.5rem)] w-64 shrink-0 border-r bg-background md:block">
-            <ScrollArea className="h-full py-6 pr-6 lg:py-8">
-                <div className="flex flex-col gap-4 px-4">
-                    <div className="space-y-1">
-                        <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">Overview</h2>
-                        {navItems.map((item) => (
+        <aside className="z-40 flex w-[64px] flex-col border-r bg-card h-screen sticky top-0 shrink-0">
+            <div className="flex h-[56px] items-center justify-center border-b">
+                <div className="h-8 w-8 rounded-lg bg-brand flex items-center justify-center text-primary-foreground font-bold">
+                    P
+                </div>
+            </div>
+
+            <ScrollArea className="flex-1 w-full">
+                <div className="flex flex-col items-center gap-4 py-4">
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                title={item.name}
                                 className={cn(
-                                    "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                                    pathname === item.href ? "bg-accent text-accent-foreground" : "transparent"
+                                    "relative group flex h-10 w-10 items-center justify-center rounded-lg transition-all",
+                                    isActive
+                                        ? "bg-brand-bg text-brand"
+                                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                 )}
                             >
-                                <item.icon className="mr-2 h-4 w-4" />
-                                <span>{item.name}</span>
+                                <item.icon className="h-5 w-5" />
+                                {isActive && (
+                                    <div className="absolute left-[-1px] h-5 w-[3px] rounded-r-full bg-brand" />
+                                )}
+                                <div className="absolute left-14 z-50 rounded-md bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border">
+                                    {item.name}
+                                </div>
                             </Link>
-                        ))}
-                    </div>
-
-                    <div className="space-y-1">
-                        <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">Categories</h2>
-                        <Accordion type="single" collapsible className="w-full">
-                            {categories.map((category) => (
-                                <AccordionItem key={category.id} value={category.id} className="border-none">
-                                    <AccordionTrigger className="flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground hover:no-underline py-1 h-9">
-                                        <div className="flex items-center">
-                                            <Folder className="mr-2 h-4 w-4" />
-                                            <span>{category.name}</span>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pb-1 pl-6">
-                                        <div className="flex flex-col gap-1">
-                                            {category.subcategories?.map((sub) => (
-                                                <Link
-                                                    key={sub.id}
-                                                    href={`/dashboard/categories/${category.slug}/${sub.slug}`}
-                                                    className={cn(
-                                                        "flex items-center rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                                                        pathname === `/dashboard/categories/${category.slug}/${sub.slug}`
-                                                            ? "bg-accent text-accent-foreground"
-                                                            : "transparent"
-                                                    )}
-                                                >
-                                                    <ChevronRight className="mr-2 h-3 w-3" />
-                                                    {sub.name}
-                                                </Link>
-                                            ))}
-                                            {category.subcategories?.length === 0 && (
-                                                <span className="text-xs text-muted-foreground px-3 py-1.5">No subcategories</span>
-                                            )}
-                                        </div>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                    </div>
-
-                    <div className="mt-auto space-y-1">
-                        <Link
-                            href="/dashboard/trash"
-                            className={cn(
-                                "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                                pathname === "/dashboard/trash" ? "bg-accent text-accent-foreground" : "transparent"
-                            )}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            <span>Trash</span>
-                        </Link>
-                    </div>
+                        );
+                    })}
                 </div>
             </ScrollArea>
+
+            <div className="flex flex-col items-center gap-4 py-4 border-t">
+                <Link
+                    href="/dashboard/settings"
+                    title="Settings"
+                    className={cn(
+                        "relative group flex h-10 w-10 items-center justify-center rounded-lg transition-all text-muted-foreground hover:bg-accent hover:text-foreground",
+                        pathname === "/dashboard/settings" && "bg-brand-bg text-brand"
+                    )}
+                >
+                    <Settings className="h-5 w-5" />
+                    <div className="absolute left-14 z-50 rounded-md bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border">
+                        Settings
+                    </div>
+                </Link>
+                <Link
+                    href="/dashboard/trash"
+                    title="Trash"
+                    className={cn(
+                        "relative group flex h-10 w-10 items-center justify-center rounded-lg transition-all text-muted-foreground hover:bg-accent hover:text-foreground",
+                        pathname === "/dashboard/trash" && "bg-brand-bg text-brand"
+                    )}
+                >
+                    <Trash2 className="h-5 w-5" />
+                    <div className="absolute left-14 z-50 rounded-md bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border">
+                        Trash
+                    </div>
+                </Link>
+            </div>
         </aside>
     );
 }
