@@ -118,7 +118,7 @@ Deliverables:
 
 ## PHASE 3 — Core Prompt CRUD
 
-### Task 3.1 — Create Prompt Form
+### Task 3.1 — Create Prompt Form [DONE]
 
 Fields:
 
@@ -136,7 +136,7 @@ Deliverables:
 
 ---
 
-### Task 3.2 — Edit Prompt
+### Task 3.2 — Edit Prompt [DONE]
 
 * Owner-only access
 * Save creates revision
@@ -149,15 +149,16 @@ Deliverables:
 
 ---
 
-### Task 3.3 — Delete Prompt
+### Task 3.3 — Delete Prompt [IN PROGRESS]
 
 * Owner-only
 * Hard delete (MVP)
 
 Deliverables:
 
-* Prompt removed
-* Related revisions removed (cascade)
+* Prompt removed [DONE]
+* Related revisions removed (cascade) [DONE]
+* Non-owners blocked (spec created, needs testing)
 
 ---
 
