@@ -58,6 +58,16 @@ interface Prompt {
     };
 }
 
+interface Revision {
+    id: string;
+    prompt_id: string;
+    title: string;
+    content: string;
+    description: string | null;
+    created_at: string;
+    created_by: string;
+}
+
 interface Variable {
     key: string;
     raw: string;
@@ -171,6 +181,8 @@ export default function PromptDetailPage({ params }: { params: Promise<{ id: str
     // Variable state
     const [values, setValues] = useState<Record<string, string>>({});
     const [showHistory, setShowHistory] = useState(false);
+    const [revisions, setRevisions] = useState<Revision[]>([]);
+    const [isFetchingRevisions, setIsFetchingRevisions] = useState(false);
 
     // Toast state
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -192,6 +204,22 @@ export default function PromptDetailPage({ params }: { params: Promise<{ id: str
         return variables.filter((v) => !values[v.key]?.trim()).length;
     }, [variables, values]);
 
+    const fetchRevisions = async () => {
+        if (!user) return;
+        setIsFetchingRevisions(true);
+        const { data, error } = await supabase
+            .from("prompt_revisions")
+            .select("*")
+            .eq("prompt_id", id)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+        if (!error && data) {
+            setRevisions(data);
+        }
+        setIsFetchingRevisions(false);
+    };
+
     useEffect(() => {
         const fetchPrompt = async () => {
             const { data, error } = await supabase
@@ -205,6 +233,10 @@ export default function PromptDetailPage({ params }: { params: Promise<{ id: str
                 setEditTitle(data.title);
                 setEditContent(data.content);
                 setEditDescription(data.description || "");
+                // Only fetch revisions if the user is the owner
+                if (user?.id === data.user_id) {
+                    fetchRevisions();
+                }
             } else {
                 router.push("/dashboard");
             }
@@ -251,10 +283,60 @@ export default function PromptDetailPage({ params }: { params: Promise<{ id: str
             });
             setIsEditing(false);
             showToast("Saved successfully");
-            router.refresh();
+            fetchRevisions(); // Refresh revisions after save
         } catch (error) {
             console.error("Error saving:", error);
             showToast("Failed to save");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleRestore = async (revision: Revision) => {
+        if (!prompt || !user) return;
+        setIsSaving(true);
+
+        try {
+            const { error: updateError } = await supabase
+                .from("prompts")
+                .update({
+                    title: revision.title,
+                    content: revision.content,
+                    description: revision.description,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", prompt.id);
+
+            if (updateError) throw updateError;
+
+            // Create a new revision for the restore action itself
+            await supabase.from("prompt_revisions").insert({
+                prompt_id: prompt.id,
+                title: revision.title,
+                content: revision.content,
+                description: revision.description,
+                created_by: user.id
+            });
+
+            setPrompt({
+                ...prompt,
+                title: revision.title,
+                content: revision.content,
+                description: revision.description,
+                updated_at: new Date().toISOString(),
+            });
+
+            // Update edit state too in case user toggles edit mode
+            setEditTitle(revision.title);
+            setEditContent(revision.content);
+            setEditDescription(revision.description || "");
+
+            showToast("Restored version");
+            fetchRevisions();
+            setShowHistory(false);
+        } catch (error) {
+            console.error("Error restoring:", error);
+            showToast("Failed to restore");
         } finally {
             setIsSaving(false);
         }
@@ -537,12 +619,70 @@ export default function PromptDetailPage({ params }: { params: Promise<{ id: str
                     </div>
 
                     {/* History Section Toggle */}
-                    <div className="border border-dashed rounded-xl p-4 text-center group cursor-pointer hover:border-brand/40 hover:bg-brand/5 transition-all" id="history-entry">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-brand transition-colors mb-1 flex items-center justify-center gap-2">
-                            <GitFork className="h-3 w-3" /> Revision History
+                    {isOwner && (
+                        <div className="space-y-3">
+                            <div
+                                className={cn(
+                                    "border border-dashed rounded-xl p-4 text-center group cursor-pointer transition-all",
+                                    showHistory ? "border-brand bg-brand/5" : "hover:border-brand/40 hover:bg-brand/5"
+                                )}
+                                id="history-entry"
+                                onClick={() => setShowHistory(!showHistory)}
+                            >
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-brand transition-colors mb-1 flex items-center justify-center gap-2">
+                                    <GitFork className="h-3 w-3" /> {showHistory ? "Close History" : "Revision History"}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground opacity-60">View and rollback previous versions of this prompt.</p>
+                            </div>
+
+                            {showHistory && (
+                                <div className="rounded-xl border bg-card/50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" id="history-panel">
+                                    <div className="bg-muted/30 px-4 py-2 border-b">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Recent Revisions</span>
+                                    </div>
+                                    <ScrollArea className="h-[300px]">
+                                        {isFetchingRevisions ? (
+                                            <div className="p-8 flex flex-col items-center justify-center gap-2">
+                                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                                <span className="text-[10px] text-muted-foreground">Syncing history...</span>
+                                            </div>
+                                        ) : revisions.length === 0 ? (
+                                            <div className="p-8 text-center">
+                                                <p className="text-[11px] text-muted-foreground italic">No revisions found.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="divide-y divide-border/50">
+                                                {revisions.map((rev) => (
+                                                    <div key={rev.id} className="p-4 space-y-2 hover:bg-muted/30 transition-colors group">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="space-y-0.5">
+                                                                <p className="text-[11px] font-bold text-foreground line-clamp-1">{rev.title}</p>
+                                                                <p className="text-[10px] text-muted-foreground">
+                                                                    {formatDistanceToNow(new Date(rev.created_at), { addSuffix: true })}
+                                                                </p>
+                                                            </div>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 text-[10px] px-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand hover:text-brand-foreground"
+                                                                onClick={() => handleRestore(rev)}
+                                                                id={`restore-rev-${rev.id}`}
+                                                            >
+                                                                Restore
+                                                            </Button>
+                                                        </div>
+                                                        <p className="text-[10px] text-muted-foreground line-clamp-2 italic font-mono bg-muted/50 p-1.5 rounded border border-border/20">
+                                                            {rev.content.substring(0, 100)}...
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </ScrollArea>
+                                </div>
+                            )}
                         </div>
-                        <p className="text-[10px] text-muted-foreground opacity-60">View and rollback previous versions of this prompt.</p>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
