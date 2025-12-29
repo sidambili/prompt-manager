@@ -2,7 +2,6 @@
 "use client";
 
 import { useAuth } from "@/components/layout/AuthProvider";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, Star, Clock, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,13 +9,28 @@ import Link from "next/link";
 
 
 import { useState, useEffect } from "react";
-import CreatePromptModal from "@/components/prompts/CreatePromptModal";
 import PromptList from "@/components/prompts/PromptList";
 import { createClient } from "@/lib/supabase/client";
 
+type DashboardPrompt = {
+    id: string;
+    title: string;
+    description: string | null;
+    content: string;
+    subcategory_id: string;
+    is_public: boolean;
+    updated_at: string;
+    subcategories: {
+        name: string;
+        categories: {
+            name: string;
+        };
+    };
+};
+
 export default function DashboardPage() {
     const { user } = useAuth();
-    const [prompts, setPrompts] = useState<any[]>([]);
+    const [prompts, setPrompts] = useState<DashboardPrompt[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
 

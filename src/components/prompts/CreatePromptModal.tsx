@@ -51,13 +51,7 @@ interface Category {
     subcategories: { id: string; name: string }[];
 }
 
-type FormValues = {
-    title: string;
-    content: string;
-    description: string;
-    subcategory_id: string;
-    is_public: boolean;
-};
+type CreatePromptFormValues = z.input<typeof formSchema>;
 
 export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNode }) {
     const [open, setOpen] = useState(false);
@@ -67,8 +61,8 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
     const supabase = createClient();
     const router = useRouter();
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema) as any,
+    const form = useForm<CreatePromptFormValues>({
+        resolver: zodResolver(formSchema),
         defaultValues: {
             title: "",
             content: "",
@@ -85,26 +79,30 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                     .from("categories")
                     .select("id, name, subcategories(id, name)")
                     .order("sort_rank", { ascending: true });
-                if (data) setCategories(data as any);
+
+                if (!data) return;
+                setCategories(data as unknown as Category[]);
             };
             fetchCategories();
         }
     }, [open, supabase]);
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: CreatePromptFormValues) {
         if (!user) return;
         setIsLoading(true);
+
+        const parsedValues = formSchema.parse(values);
 
         try {
             const { data, error } = await supabase
                 .from("prompts")
                 .insert({
                     user_id: user.id,
-                    title: values.title,
-                    content: values.content,
-                    description: values.description,
-                    subcategory_id: values.subcategory_id,
-                    is_public: values.is_public,
+                    title: parsedValues.title,
+                    content: parsedValues.content,
+                    description: parsedValues.description,
+                    subcategory_id: parsedValues.subcategory_id,
+                    is_public: parsedValues.is_public,
                 })
                 .select()
                 .single();

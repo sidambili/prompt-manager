@@ -85,7 +85,7 @@ async function verifyRLS() {
     // Checking for existing subcategories
     const { data: subcats } = await supabaseA.from('subcategories').select('id, category_id').limit(1)
 
-    let subcatId = subcats?.[0]?.id
+    const subcatId = subcats?.[0]?.id
 
     if (!subcatId) {
         console.warn('⚠️ No subcategories found. Cannot test Prompt creation fully without seeding.')
