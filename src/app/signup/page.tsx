@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useOAuthProviders } from "@/lib/auth/hooks";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,8 @@ export default function SignUpPage() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const searchParams = useSearchParams();
+    const redirectTo = searchParams.get("redirect") ?? "/";
     const supabase = createClient();
     const { providers: oauthProviders, isLoading: oauthLoading } = useOAuthProviders();
 
@@ -40,7 +43,7 @@ export default function SignUpPage() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
                 },
             });
             if (error) throw error;
@@ -60,7 +63,7 @@ export default function SignUpPage() {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
                 },
             });
 
@@ -68,7 +71,7 @@ export default function SignUpPage() {
 
             if (data.user && data.session) {
                 // User is immediately signed in (auto-confirmed)
-                window.location.href = "/";
+                window.location.href = redirectTo;
             } else if (data.user) {
                 // User created but needs email confirmation
                 if (isLocalDev()) {
