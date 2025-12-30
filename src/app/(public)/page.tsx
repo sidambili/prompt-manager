@@ -37,15 +37,15 @@ export default async function Home() {
               className="flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300"
               id="public-home-hero-ctas"
             >
-              <Button asChild size="lg" className="rounded-full px-8 h-12 text-base">
+              <Button asChild size="lg" className="rounded-sm px-8 h-12 text-base">
                 <Link href="/signup">
                   Start creating for free
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full px-8 h-12 text-base">
+              <Button asChild variant="outline" size="lg" className="rounded-sm px-8 h-12 text-base">
                 <Link href="/prompts">Browse</Link>
               </Button>
-              <Button variant="ghost" size="lg" className="rounded-full px-8 h-12 text-base" asChild>
+              <Button variant="ghost" size="lg" className="rounded-sm px-8 h-12 text-base" asChild>
                 <Link href="/login">
                   Live Demo <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>

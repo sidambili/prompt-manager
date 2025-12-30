@@ -115,7 +115,7 @@ export default function PublicHeader({
                     href="https://github.com/sidambili/prompt-manager"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-1 text-sm font-medium border rounded-full hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1 text-sm font-medium border rounded-sm hover:bg-muted/50 transition-colors"
                     id="github-badge"
                 >
                     <Github className="h-4 w-4" />
@@ -135,7 +135,7 @@ export default function PublicHeader({
                 <Button
                     asChild
                     size="sm"
-                    className="h-9 px-6 text-[15px] font-bold bg-foreground text-background hover:bg-foreground/90 transition-all rounded-lg"
+                    className="h-9 px-6 text-[15px] font-bold bg-foreground text-background hover:bg-foreground/90 transition-all rounded-sm"
                     id="public-dashboard-button"
                 >
                     <Link href={dashboardHref}>Dashboard</Link>
