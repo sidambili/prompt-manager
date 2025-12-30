@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useOAuthProviders } from "@/lib/auth/hooks";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export default function SignUpPage() {
     const [password, setPassword] = useState("");
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get("redirect") ?? "/";
+    const router = useRouter();
     const supabase = createClient();
     const { providers: oauthProviders, isLoading: oauthLoading } = useOAuthProviders();
 
@@ -71,7 +73,7 @@ export default function SignUpPage() {
 
             if (data.user && data.session) {
                 // User is immediately signed in (auto-confirmed)
-                window.location.href = redirectTo;
+                router.push(redirectTo);
             } else if (data.user) {
                 // User created but needs email confirmation
                 if (isLocalDev()) {

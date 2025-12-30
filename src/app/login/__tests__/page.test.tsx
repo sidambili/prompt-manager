@@ -10,12 +10,16 @@ const navigationMocks = vi.hoisted(() => {
     get: (_key: string) => null,
   }))
 
-  return { useSearchParams }
+  const push = vi.fn()
+  const useRouter = vi.fn(() => ({ push }))
+
+  return { useSearchParams, useRouter, push }
 })
 
 vi.mock('next/navigation', () => {
   return {
     useSearchParams: () => navigationMocks.useSearchParams(),
+    useRouter: () => navigationMocks.useRouter(),
   }
 })
 
@@ -84,6 +88,8 @@ describe('LoginPage', () => {
     supabaseMocks.signInWithPassword.mockReset();
     supabaseMocks.signInWithOAuth.mockReset();
     navigationMocks.useSearchParams.mockReset();
+    navigationMocks.useRouter.mockReset();
+    navigationMocks.push.mockReset();
     navigationMocks.useSearchParams.mockReturnValue({
       get: (_key: string) => null,
     })
@@ -108,6 +114,8 @@ describe('LoginPage', () => {
       get: (key: string) => (key === 'redirect' ? '/dashboard' : null),
     })
 
+    navigationMocks.useRouter.mockReturnValue({ push: navigationMocks.push })
+
     const user = userEvent.setup();
     render(<LoginPage />);
 
@@ -119,7 +127,7 @@ describe('LoginPage', () => {
       email: 'user@example.com',
       password: 'password123',
     });
-    expect(window.location.href).toBe('/dashboard');
+    expect(navigationMocks.push).toHaveBeenCalledWith('/dashboard');
   });
 
   it('alerts on email/password login error', async () => {

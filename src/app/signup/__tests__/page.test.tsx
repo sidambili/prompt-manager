@@ -10,12 +10,16 @@ const navigationMocks = vi.hoisted(() => {
     get: (_key: string) => null,
   }))
 
-  return { useSearchParams }
+  const push = vi.fn()
+  const useRouter = vi.fn(() => ({ push }))
+
+  return { useSearchParams, useRouter, push }
 })
 
 vi.mock('next/navigation', () => {
   return {
     useSearchParams: () => navigationMocks.useSearchParams(),
+    useRouter: () => navigationMocks.useRouter(),
   }
 })
 
@@ -87,6 +91,8 @@ describe('SignUpPage', () => {
     supabaseMocks.signUp.mockReset();
     supabaseMocks.signInWithOAuth.mockReset();
     navigationMocks.useSearchParams.mockReset();
+    navigationMocks.useRouter.mockReset();
+    navigationMocks.push.mockReset();
     navigationMocks.useSearchParams.mockReturnValue({
       get: (_key: string) => null,
     })
@@ -116,6 +122,8 @@ describe('SignUpPage', () => {
       get: (key: string) => (key === 'redirect' ? '/dashboard' : null),
     })
 
+    navigationMocks.useRouter.mockReturnValue({ push: navigationMocks.push })
+
     const user = userEvent.setup();
     render(<SignUpPage />);
 
@@ -124,7 +132,7 @@ describe('SignUpPage', () => {
     await user.click(screen.getByRole('button', { name: /sign up/i }));
 
     expect(supabaseMocks.signUp).toHaveBeenCalled();
-    expect(window.location.href).toBe('/dashboard');
+    expect(navigationMocks.push).toHaveBeenCalledWith('/dashboard');
   });
 
   it('alerts when user created but email confirmation required', async () => {

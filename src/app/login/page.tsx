@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useOAuthProviders } from "@/lib/auth/hooks";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get("redirect") ?? "/";
+    const router = useRouter();
     const supabase = createClient();
     const { providers: oauthProviders, isLoading: oauthLoading } = useOAuthProviders();
 
@@ -60,7 +62,7 @@ export default function LoginPage() {
             });
             if (error) throw error;
             // Redirect happens via middleware/auth state change usually, or manually:
-            window.location.href = redirectTo;
+            router.push(redirectTo);
         } catch (error) {
             console.error("Login error:", error);
             alert("Login failed. Check console for details.");
