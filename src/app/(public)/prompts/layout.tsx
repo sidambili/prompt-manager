@@ -28,14 +28,20 @@ export default async function PublicPromptsLayout({
     const typedCategories = (categories ?? []) as PublicCategory[];
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="public-prompts-shell">
-            <div className="lg:col-span-3" id="public-prompts-sidebar-col">
+        <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-120px)]" id="public-prompts-shell">
+            {/* Sidebar Column: Fixed on desktop, relative on mobile */}
+            <div
+                className="w-full lg:w-[280px] lg:flex-shrink-0 lg:sticky lg:top-[88px] lg:h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar"
+                id="public-prompts-sidebar-col"
+            >
                 <PublicSidebar
                     // Sidebar selection state is derived from the URL client-side.
                     categories={typedCategories}
                 />
             </div>
-            <div className="lg:col-span-9" id="public-prompts-content-col">
+
+            {/* Content Column */}
+            <div className="flex-1 min-w-0" id="public-prompts-content-col">
                 {children}
             </div>
         </div>
