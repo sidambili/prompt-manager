@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import HomePromptSearch from "@/components/prompts/HomePromptSearch";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -48,11 +49,19 @@ export default async function Home() {
                   Start creating for free
                 </Link>
               </Button>
+              <Button asChild variant="outline" size="lg" className="rounded-full px-8 h-12 text-base">
+                <Link href="/prompts">Browse</Link>
+              </Button>
               <Button variant="ghost" size="lg" className="rounded-full px-8 h-12 text-base" asChild>
                 <Link href="/login">
                   Live Demo <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
+            </div>
+
+            {/* Quick discovery CTA: search public prompts without leaving Home */}
+            <div className="w-full pt-2" id="home-quick-search">
+              <HomePromptSearch />
             </div>
           </div>
         </section>
