@@ -134,11 +134,11 @@ create policy "Subcategories are publicly readable"
     using (true);
 
 -- Prompts
--- Read: Public+Listed OR Own
+-- Read: Public (listed or unlisted) OR Own
 create policy "Public listed prompts or own prompts are readable"
     on public.prompts for select
     using (
-        (is_public = true and is_listed = true) or
+        (is_public = true) or
         (auth.uid() = user_id)
     );
 

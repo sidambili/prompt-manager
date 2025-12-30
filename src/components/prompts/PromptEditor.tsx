@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -37,6 +36,8 @@ const formSchema = z.object({
   is_public: z.boolean().default(false),
   is_listed: z.boolean().default(true),
 });
+
+type PromptEditorFormValues = z.input<typeof formSchema>;
 
 interface Category {
   id: string;
@@ -55,16 +56,17 @@ type PromptEditorProps = {
     is_listed: boolean;
     subcategory_id: string;
   };
+  ownerId: string;
 };
 
-export default function PromptEditor({ prompt }: PromptEditorProps) {
+export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const supabase = createClient();
   const router = useRouter();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<PromptEditorFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: prompt.title,
@@ -91,22 +93,25 @@ export default function PromptEditor({ prompt }: PromptEditorProps) {
     fetchCategories();
   }, [supabase]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: PromptEditorFormValues) => {
     setIsSaving(true);
 
     try {
+      const parsedValues = formSchema.parse(values);
+
       // Generate new slug if title changed
-      const newSlug = values.title !== prompt.title ? slugify(values.title) : prompt.slug;
+      const newSlug =
+        parsedValues.title !== prompt.title ? slugify(parsedValues.title) : prompt.slug;
 
       const { error } = await supabase
         .from('prompts')
         .update({
-          title: values.title,
-          content: values.content,
-          description: values.description,
-          subcategory_id: values.subcategory_id,
-          is_public: values.is_public,
-          is_listed: values.is_listed,
+          title: parsedValues.title,
+          content: parsedValues.content,
+          description: parsedValues.description,
+          subcategory_id: parsedValues.subcategory_id,
+          is_public: parsedValues.is_public,
+          is_listed: parsedValues.is_listed,
           slug: newSlug,
         })
         .eq('id', prompt.id);
@@ -116,10 +121,10 @@ export default function PromptEditor({ prompt }: PromptEditorProps) {
       // Create revision entry
       await supabase.from('prompt_revisions').insert({
         prompt_id: prompt.id,
-        title: values.title,
-        content: values.content,
-        description: values.description,
-        created_by: (await supabase.auth.getUser()).data.user?.id,
+        title: parsedValues.title,
+        content: parsedValues.content,
+        description: parsedValues.description,
+        created_by: ownerId,
       });
 
       // Redirect to canonical URL
@@ -227,7 +232,12 @@ export default function PromptEditor({ prompt }: PromptEditorProps) {
                         </div>
                       </div>
                       <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          className="h-4 w-4"
+                        />
                       </FormControl>
                     </FormItem>
                   )}
@@ -245,10 +255,12 @@ export default function PromptEditor({ prompt }: PromptEditorProps) {
                         </div>
                       </div>
                       <FormControl>
-                        <Switch
+                        <input
+                          type="checkbox"
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onChange={(e) => field.onChange(e.target.checked)}
                           disabled={!form.watch('is_public')}
+                          className="h-4 w-4"
                         />
                       </FormControl>
                     </FormItem>

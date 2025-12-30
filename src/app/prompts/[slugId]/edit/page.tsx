@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { parseSlugId } from '@/lib/slug';
 import PromptEditor from '@/components/prompts/PromptEditor';
@@ -15,7 +15,7 @@ export default async function EditPromptPage({ params }: Props) {
     notFound();
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Verify authentication
   const {
@@ -51,5 +51,10 @@ export default async function EditPromptPage({ params }: Props) {
     notFound();
   }
 
-  return <PromptEditor prompt={prompt} />;
+  // Canonical redirect for edit route
+  if (prompt.slug !== parsed.slug) {
+    permanentRedirect(`/prompts/${prompt.slug}--${prompt.id}/edit`);
+  }
+
+  return <PromptEditor prompt={prompt} ownerId={user.id} />;
 }
