@@ -4,6 +4,7 @@ import { updateSession } from '../middleware';
 
 type NextUrl = {
   pathname: string;
+  search: string;
   clone: () => NextUrl;
 };
 
@@ -24,7 +25,7 @@ vi.mock('next/server', () => {
   return {
     NextResponse: {
       next: (...args: unknown[]) => nextResponseNext(...args),
-      redirect: (url: string) => nextResponseRedirect(url),
+      redirect: (url: unknown) => nextResponseRedirect(url),
     },
   };
 });
@@ -44,6 +45,7 @@ vi.mock('@supabase/ssr', () => {
 function createRequest(pathname: string): NextRequestMock {
   const nextUrl: NextUrl = {
     pathname,
+    search: '',
     clone: () => ({ ...nextUrl }),
   };
 
@@ -76,7 +78,26 @@ describe('updateSession', () => {
     const request = createRequest('/dashboard');
     await updateSession(request as unknown as never);
 
-    expect(nextResponseRedirect).toHaveBeenCalled();
+    expect(nextResponseRedirect).toHaveBeenCalledTimes(1);
+    const redirectUrl = nextResponseRedirect.mock.calls[0]?.[0] as NextUrl;
+    expect(redirectUrl.pathname).toBe('/login');
+    const params = new URLSearchParams(redirectUrl.search);
+    expect(params.get('redirect')).toBe('/dashboard');
+  });
+
+  it('preserves existing query string when redirecting unauthenticated user from /dashboard', async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+
+    const request = createRequest('/dashboard/prompts');
+    request.nextUrl.search = '?tab=mine&page=2';
+
+    await updateSession(request as unknown as never);
+
+    expect(nextResponseRedirect).toHaveBeenCalledTimes(1);
+    const redirectUrl = nextResponseRedirect.mock.calls[0]?.[0] as NextUrl;
+    expect(redirectUrl.pathname).toBe('/login');
+    const params = new URLSearchParams(redirectUrl.search);
+    expect(params.get('redirect')).toBe('/dashboard/prompts?tab=mine&page=2');
   });
 
   it('redirects authenticated user from /login to /dashboard', async () => {

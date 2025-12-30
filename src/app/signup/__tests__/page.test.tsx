@@ -5,6 +5,20 @@ import userEvent from '@testing-library/user-event';
 
 import SignUpPage from '../page';
 
+const navigationMocks = vi.hoisted(() => {
+  const useSearchParams = vi.fn((): { get: (key: string) => string | null } => ({
+    get: (_key: string) => null,
+  }))
+
+  return { useSearchParams }
+})
+
+vi.mock('next/navigation', () => {
+  return {
+    useSearchParams: () => navigationMocks.useSearchParams(),
+  }
+})
+
 vi.mock('next/link', () => {
   return {
     default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -72,6 +86,10 @@ describe('SignUpPage', () => {
   beforeEach(() => {
     supabaseMocks.signUp.mockReset();
     supabaseMocks.signInWithOAuth.mockReset();
+    navigationMocks.useSearchParams.mockReset();
+    navigationMocks.useSearchParams.mockReturnValue({
+      get: (_key: string) => null,
+    })
     alertSpy.mockClear();
 
     Object.defineProperty(window, 'location', {
@@ -88,11 +106,15 @@ describe('SignUpPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('signs up and navigates to / when session is returned', async () => {
+  it('signs up and navigates to redirect destination when session is returned', async () => {
     supabaseMocks.signUp.mockResolvedValue({
       data: { user: { id: 'u1' }, session: { access_token: 't' } },
       error: null,
     });
+
+    navigationMocks.useSearchParams.mockReturnValue({
+      get: (key: string) => (key === 'redirect' ? '/dashboard' : null),
+    })
 
     const user = userEvent.setup();
     render(<SignUpPage />);
@@ -102,7 +124,7 @@ describe('SignUpPage', () => {
     await user.click(screen.getByRole('button', { name: /sign up/i }));
 
     expect(supabaseMocks.signUp).toHaveBeenCalled();
-    expect(window.location.href).toBe('/');
+    expect(window.location.href).toBe('/dashboard');
   });
 
   it('alerts when user created but email confirmation required', async () => {

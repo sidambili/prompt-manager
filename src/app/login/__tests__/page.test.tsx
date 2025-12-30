@@ -5,6 +5,20 @@ import userEvent from '@testing-library/user-event';
 
 import LoginPage from '../page';
 
+const navigationMocks = vi.hoisted(() => {
+  const useSearchParams = vi.fn((): { get: (key: string) => string | null } => ({
+    get: (_key: string) => null,
+  }))
+
+  return { useSearchParams }
+})
+
+vi.mock('next/navigation', () => {
+  return {
+    useSearchParams: () => navigationMocks.useSearchParams(),
+  }
+})
+
 vi.mock('next/link', () => {
   return {
     default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -69,6 +83,10 @@ describe('LoginPage', () => {
   beforeEach(() => {
     supabaseMocks.signInWithPassword.mockReset();
     supabaseMocks.signInWithOAuth.mockReset();
+    navigationMocks.useSearchParams.mockReset();
+    navigationMocks.useSearchParams.mockReturnValue({
+      get: (_key: string) => null,
+    })
     alertSpy.mockClear();
 
     Object.defineProperty(window, 'location', {
@@ -84,8 +102,11 @@ describe('LoginPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('signs in with email/password and navigates to /', async () => {
+  it('signs in with email/password and navigates to redirect destination', async () => {
     supabaseMocks.signInWithPassword.mockResolvedValue({ error: null });
+    navigationMocks.useSearchParams.mockReturnValue({
+      get: (key: string) => (key === 'redirect' ? '/dashboard' : null),
+    })
 
     const user = userEvent.setup();
     render(<LoginPage />);
@@ -98,7 +119,7 @@ describe('LoginPage', () => {
       email: 'user@example.com',
       password: 'password123',
     });
-    expect(window.location.href).toBe('/');
+    expect(window.location.href).toBe('/dashboard');
   });
 
   it('alerts on email/password login error', async () => {
