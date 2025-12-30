@@ -1,7 +1,7 @@
 
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { User, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -25,43 +25,54 @@ export default function AuthProvider({
 }: {
     children: React.ReactNode;
 }) {
+    const missing = useMemo(() => {
+        const keys: string[] = [];
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL) keys.push("NEXT_PUBLIC_SUPABASE_URL");
+        if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) keys.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+        return keys;
+    }, []);
+    const missingKey = missing.join(",");
+    const isSupabaseConfigured = missing.length === 0;
+
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
     const router = useRouter();
     const pathname = usePathname();
 
+    const handleAuthStateChange = useCallback((_: string, nextSession: Session | null) => {
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+        setIsLoading(false);
+    }, []);
+
     useEffect(() => {
+        if (!isSupabaseConfigured) {
+            if (pathname !== "/auth/config-error") {
+                router.push(`/auth/config-error?missing=${encodeURIComponent(missingKey)}`);
+            }
+
+            return;
+        }
+
         let supabase: ReturnType<typeof createClient>;
         try {
             supabase = createClient();
         } catch {
-            const missing: string[] = [];
-            if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL");
-            if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-
             if (pathname !== "/auth/config-error") {
-                router.push(`/auth/config-error?missing=${encodeURIComponent(missing.join(","))}`);
+                router.push(`/auth/config-error?missing=${encodeURIComponent(missingKey)}`);
             }
-
-            setIsLoading(false);
-            setSession(null);
-            setUser(null);
             return;
         }
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setIsLoading(false);
-        });
+        } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
         return () => {
             subscription.unsubscribe();
         };
-    }, [pathname, router]);
+    }, [handleAuthStateChange, isSupabaseConfigured, missingKey, pathname, router]);
 
     return (
         <AuthContext.Provider value={{ user, session, isLoading }}>
