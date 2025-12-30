@@ -147,9 +147,19 @@ export default function SignUpPage() {
                             className="w-full"
                             variant="outline"
                             type="button"
+                            title={
+                                !oauthProviders.github
+                                    ? "GitHub OAuth is not configured. See self-hosting documentation for setup instructions."
+                                    : undefined
+                            }
                         >
                             {loading ? "Loading..." : "GitHub"}
                         </Button>
+                        {!oauthProviders.github && !oauthLoading && (
+                            <p className="text-xs text-muted-foreground mt-1 text-center">
+                                GitHub OAuth not configured
+                            </p>
+                        )}
                     </div>
                     <div className="relative">
                         <Button
@@ -158,9 +168,19 @@ export default function SignUpPage() {
                             className="w-full"
                             variant="outline"
                             type="button"
+                            title={
+                                !oauthProviders.google
+                                    ? "Google OAuth is not configured. See self-hosting documentation for setup instructions."
+                                    : undefined
+                            }
                         >
                             {loading ? "Loading..." : "Google"}
                         </Button>
+                        {!oauthProviders.google && !oauthLoading && (
+                            <p className="text-xs text-muted-foreground mt-1 text-center">
+                                Google OAuth not configured
+                            </p>
+                        )}
                     </div>
                 </div>
 

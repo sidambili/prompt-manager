@@ -166,4 +166,16 @@ describe('SignUpPage', () => {
 
     expect(alertSpy).toHaveBeenCalled();
   });
+
+  it('shows OAuth not configured helper text when providers are disabled', async () => {
+    render(<SignUpPage />);
+
+    const githubButton = screen.getByRole('button', { name: /github/i });
+    expect(githubButton).toBeDisabled();
+    expect(screen.getByText(/github oauth not configured/i)).toBeInTheDocument();
+
+    const googleButton = screen.getByRole('button', { name: /google/i });
+    expect(googleButton).toBeDisabled();
+    expect(screen.getByText(/google oauth not configured/i)).toBeInTheDocument();
+  })
 });
