@@ -2,11 +2,26 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+function sanitizeNext(next: string | null): string {
+    if (!next) return '/'
+
+    if (!next.startsWith('/')) return '/'
+    if (next.startsWith('//')) return '/'
+    if (next.includes('://')) return '/'
+    if (next.includes('\\')) return '/'
+
+    if (next === '/') return '/'
+    if (next.startsWith('/dashboard')) return next
+    if (next.startsWith('/prompts')) return next
+
+    return '/'
+}
+
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
     // if "next" is in param, use it as the redirect URL
-    const next = searchParams.get('next') ?? '/'
+    const next = sanitizeNext(searchParams.get('next'))
 
     if (code) {
         const supabase = await createClient()
