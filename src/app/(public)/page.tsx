@@ -19,19 +19,6 @@ export default async function Home() {
       className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground"
       id="public-home-root"
     >
-      <header className="px-6 h-16 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-50">
-        <Link className="text-xl font-bold tracking-tighter" href="/">
-          PromptManager
-        </Link>
-        <nav className="flex gap-8 items-center">
-          <Link className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" href="/login">
-            Sign In
-          </Link>
-          <Button asChild size="sm" className="rounded-full px-6">
-            <Link href="/signup">Get Started</Link>
-          </Button>
-        </nav>
-      </header>
 
       <main className="flex-1 flex flex-col items-center justify-center">
         <section className="w-full max-w-5xl px-6 py-24 md:py-32 lg:py-48">

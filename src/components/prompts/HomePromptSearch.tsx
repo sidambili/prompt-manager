@@ -30,7 +30,7 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
     const requestIdRef = useRef(0);
 
     return (
-        <div className="w-full max-w-[720px]" id="home-prompt-search">
+        <div className="w-full max-w-[720px] mx-auto" id="home-prompt-search">
             <div className="relative" id="home-search-input-wrap">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input

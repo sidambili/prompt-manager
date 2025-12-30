@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Github } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +41,7 @@ export default function PublicHeader({
             className="sticky top-0 z-40 flex h-[56px] w-full items-center justify-between border-b bg-background/80 backdrop-blur-md px-6"
             id="public-header"
         >
-            <div className="flex items-center gap-10" id="public-header-left">
+            <div className="flex-1 flex items-center gap-10" id="public-header-left">
                 <Link
                     href="/"
                     className="text-lg font-extrabold tracking-tight hover:text-brand transition-colors"
@@ -74,7 +74,7 @@ export default function PublicHeader({
                 </nav>
             </div>
 
-            <div className="flex-1 flex items-center justify-center max-w-xl px-4" id="public-header-center">
+            <div className="flex items-center justify-center w-full max-w-xl px-4" id="public-header-center">
                 <div className="relative w-full group" id="public-search-wrapper">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-brand transition-colors" />
                     <Input
@@ -110,7 +110,18 @@ export default function PublicHeader({
                 </div>
             </div>
 
-            <div className="flex items-center gap-4" id="public-header-right">
+            <div className="flex-1 flex items-center justify-end gap-3 sm:gap-4" id="public-header-right">
+                <Link
+                    href="https://github.com/sidambili/prompt-manager"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-1 text-sm font-medium border rounded-full hover:bg-muted/50 transition-colors"
+                    id="github-badge"
+                >
+                    <Github className="h-4 w-4" />
+                    <span>GitHub</span>
+                </Link>
+
                 {!user && (
                     <Link
                         href="/signup"
