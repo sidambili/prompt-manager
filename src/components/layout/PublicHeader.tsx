@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useMemo, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
@@ -19,9 +19,10 @@ export default function PublicHeader({
 }: PublicHeaderProps) {
     const { user } = useAuth();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const router = useRouter();
 
-    const [query, setQuery] = useState("");
+    const debounceHandleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isHomeActive = pathname === "/";
     const isPromptsActive = pathname?.startsWith("/prompts") ?? false;
@@ -32,31 +33,8 @@ export default function PublicHeader({
         return searchPlaceholder ?? "Search prompts...";
     }, [searchPlaceholder]);
 
-    useEffect(() => {
-        // Keep the header search in sync with the URL when navigating around.
-        if (typeof window === "undefined") return;
-
-        const params = new URLSearchParams(window.location.search);
-        const urlQuery = params.get("q") ?? "";
-        setQuery(urlQuery);
-    }, [pathname]);
-
-    useEffect(() => {
-        // On /prompts, update the querystring as the user types so the list filters live.
-        if (typeof window === "undefined") return;
-
-        if (!pathname?.startsWith("/prompts")) return;
-
-        const q = query.trim();
-        const handle = setTimeout(() => {
-            const params = new URLSearchParams(window.location.search);
-            if (q) params.set("q", q);
-            else params.delete("q");
-            router.replace(`/prompts${params.toString() ? `?${params.toString()}` : ""}`);
-        }, 250);
-
-        return () => clearTimeout(handle);
-    }, [query, pathname, router]);
+    const urlQuery = searchParams.get("q") ?? "";
+    const inputValue = pathname === "/prompts" ? urlQuery : "";
 
     return (
         <header
@@ -104,11 +82,28 @@ export default function PublicHeader({
                     <Input
                         type="search"
                         placeholder={resolvedPlaceholder}
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
+                        key={`${pathname}:${inputValue}`}
+                        defaultValue={inputValue}
+                        onChange={(e) => {
+                            if (pathname !== "/prompts") return;
+
+                            if (debounceHandleRef.current) {
+                                clearTimeout(debounceHandleRef.current);
+                            }
+
+                            const q = e.target.value.trim();
+                            debounceHandleRef.current = setTimeout(() => {
+                                const params = new URLSearchParams(window.location.search);
+                                if (q) params.set("q", q);
+                                else params.delete("q");
+                                router.replace(
+                                    `/prompts${params.toString() ? `?${params.toString()}` : ""}`
+                                );
+                            }, 250);
+                        }}
                         onKeyDown={(e) => {
                             if (e.key !== "Enter") return;
-                            const q = query.trim();
+                            const q = (e.currentTarget.value ?? "").trim();
                             router.push(q ? `/prompts?q=${encodeURIComponent(q)}` : "/prompts");
                         }}
                         className="w-full bg-muted/40 pl-9 h-8 text-sm border-transparent focus-visible:ring-1 focus-visible:ring-brand focus-visible:border-brand transition-all"

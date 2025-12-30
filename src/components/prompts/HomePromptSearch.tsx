@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { buildSlugId } from "@/lib/slug";
 import { Input } from "@/components/ui/input";
@@ -26,44 +26,8 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
 
     const supabase = useMemo(() => createClient(), []);
 
-    useEffect(() => {
-        const q = query.trim();
-        if (!q) {
-            setResults([]);
-            return;
-        }
-
-        let isActive = true;
-        setIsLoading(true);
-
-        const handle = setTimeout(async () => {
-            // Home search is a discovery surface, so it only queries listed public prompts.
-            const { data, error } = await supabase
-                .from("prompts")
-                .select("id, title, description, slug")
-                .eq("is_public", true)
-                .eq("is_listed", true)
-                .ilike("title", `%${q}%`)
-                .order("updated_at", { ascending: false })
-                .limit(8);
-
-            if (!isActive) return;
-
-            if (error || !data) {
-                setResults([]);
-                setIsLoading(false);
-                return;
-            }
-
-            setResults(data as PromptSearchResult[]);
-            setIsLoading(false);
-        }, 250); // Small debounce to avoid hammering Supabase on every keystroke.
-
-        return () => {
-            isActive = false;
-            clearTimeout(handle);
-        };
-    }, [query, supabase]);
+    const debounceHandleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const requestIdRef = useRef(0);
 
     return (
         <div className="w-full max-w-[720px]" id="home-prompt-search">
@@ -71,7 +35,51 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => {
+                        const nextQuery = e.target.value;
+                        setQuery(nextQuery);
+
+                        const q = nextQuery.trim();
+                        if (!q) {
+                            if (debounceHandleRef.current) {
+                                clearTimeout(debounceHandleRef.current);
+                            }
+                            requestIdRef.current += 1;
+                            setIsLoading(false);
+                            setResults([]);
+                            return;
+                        }
+
+                        if (debounceHandleRef.current) {
+                            clearTimeout(debounceHandleRef.current);
+                        }
+
+                        const requestId = (requestIdRef.current += 1);
+                        setIsLoading(true);
+
+                        debounceHandleRef.current = setTimeout(async () => {
+                            // Home search is a discovery surface, so it only queries listed public prompts.
+                            const { data, error } = await supabase
+                                .from("prompts")
+                                .select("id, title, description, slug")
+                                .eq("is_public", true)
+                                .eq("is_listed", true)
+                                .ilike("title", `%${q}%`)
+                                .order("updated_at", { ascending: false })
+                                .limit(8);
+
+                            if (requestId !== requestIdRef.current) return;
+
+                            if (error || !data) {
+                                setResults([]);
+                                setIsLoading(false);
+                                return;
+                            }
+
+                            setResults(data as PromptSearchResult[]);
+                            setIsLoading(false);
+                        }, 250); // Small debounce to avoid hammering Supabase on every keystroke.
+                    }}
                     placeholder="Search public prompts..."
                     className="h-12 pl-10 text-sm"
                     id="home-search-input"
