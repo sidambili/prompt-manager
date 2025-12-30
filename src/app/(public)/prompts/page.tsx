@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import PublicPromptList from "@/components/prompts/PublicPromptList";
+import PublicPromptList, { type PublicPrompt } from "@/components/prompts/PublicPromptList";
 
 export default async function PublicPromptsPage({
     searchParams,
@@ -17,7 +17,7 @@ export default async function PublicPromptsPage({
     let query = supabase
         .from("prompts")
         .select(
-            "id, title, description, slug, updated_at, subcategories(id, name, categories(id, name))"
+            "id, title, description, slug, updated_at, subcategory:subcategories(id, name, categories(id, name))"
         )
         .eq("is_public", true)
         .eq("is_listed", true)
@@ -38,6 +38,8 @@ export default async function PublicPromptsPage({
 
     const { data: prompts } = await query;
 
+    const typedPrompts = (prompts ?? []) as unknown as PublicPrompt[];
+
     return (
         <div className="space-y-6" id="public-prompts-page">
             <div className="flex flex-col gap-1" id="public-prompts-header">
@@ -49,7 +51,7 @@ export default async function PublicPromptsPage({
                 </p>
             </div>
 
-            <PublicPromptList prompts={(prompts ?? []) as any} />
+            <PublicPromptList prompts={typedPrompts} />
         </div>
     );
 }

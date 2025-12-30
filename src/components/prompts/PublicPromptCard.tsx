@@ -14,7 +14,7 @@ type PublicPromptCardProps = {
         description: string | null;
         slug: string;
         updated_at: string;
-        subcategories: {
+        subcategory: {
             id: string;
             name: string;
             categories: {
@@ -46,7 +46,7 @@ export default function PublicPromptCard({ prompt }: PublicPromptCardProps) {
                                     className="text-[10px] h-4 px-1.5 font-normal border-brand-border text-brand-300 bg-brand-bg/50"
                                     id={`public-prompt-subcategory-${prompt.id}`}
                                 >
-                                    {prompt.subcategories?.name}
+                                    {prompt.subcategory?.name}
                                 </Badge>
                                 <Badge
                                     variant="outline"

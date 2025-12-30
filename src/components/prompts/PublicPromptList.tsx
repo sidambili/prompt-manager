@@ -2,13 +2,13 @@
 
 import PublicPromptCard from "@/components/prompts/PublicPromptCard";
 
-type PublicPrompt = {
+export type PublicPrompt = {
     id: string;
     title: string;
     description: string | null;
     slug: string;
     updated_at: string;
-    subcategories: {
+    subcategory: {
         id: string;
         name: string;
         categories: {
