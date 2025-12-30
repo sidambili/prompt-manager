@@ -240,3 +240,14 @@ If you see `Your account does not have the necessary privileges to access this e
 -   [Supabase Auth Documentation](https://supabase.com/docs/guides/auth)
 -   [Supabase OAuth Setup](https://supabase.com/docs/guides/auth/social-login)
 -   [Next.js Deployment Guide](https://nextjs.org/docs/app/building-your-application/deploying)
+
+### Supabase Self-hosting Commands
+
+-   `npx supabase start` - Start local Supabase environment
+-   `npx supabase stop` - Stop local Supabase environment
+-   `npx supabase db reset` - Reset database to initial state
+-   `npx supabase db push` - Push local schema changes to database
+-   `npx supabase db diff` - Generate migration file from schema changes
+-   `npx supabase db seed` - Run seed scripts
+-   `npx supabase status` - Check the status of Supabase services
+-   `npx supabase secrets list` - List Supabase secrets
