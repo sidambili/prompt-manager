@@ -1,5 +1,5 @@
 
-import { createClientOrRedirect } from "@/lib/supabase/server-rsc";
+import { createClientOrNull } from "@/lib/supabase/server-rsc";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,12 @@ import { ArrowRight } from "lucide-react";
 import HomePromptSearch from "@/components/prompts/HomePromptSearch";
 
 export default async function Home() {
-  const supabase = await createClientOrRedirect();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect("/dashboard");
+  const supabase = await createClientOrNull();
+  if (supabase) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      redirect("/dashboard");
+    }
   }
 
   return (

@@ -24,7 +24,15 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
     const [results, setResults] = useState<PromptSearchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const supabase = useMemo(() => createClient(), []);
+    const supabase = useMemo(() => {
+        try {
+            return createClient();
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const isSupabaseConfigured = supabase !== null;
 
     const debounceHandleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const requestIdRef = useRef(0);
@@ -36,6 +44,10 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
                 <Input
                     value={query}
                     onChange={(e) => {
+                        if (!isSupabaseConfigured) {
+                            return;
+                        }
+
                         const nextQuery = e.target.value;
                         setQuery(nextQuery);
 
@@ -58,6 +70,12 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
                         setIsLoading(true);
 
                         debounceHandleRef.current = setTimeout(async () => {
+                            if (!supabase) {
+                                setResults([]);
+                                setIsLoading(false);
+                                return;
+                            }
+
                             // Home search is a discovery surface, so it only queries listed public prompts.
                             const { data, error } = await supabase
                                 .from("prompts")
@@ -83,10 +101,19 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
                     placeholder="Search public prompts..."
                     className="h-12 pl-10 text-sm"
                     id="home-search-input"
+                    disabled={!isSupabaseConfigured}
                 />
             </div>
 
             <div className="mt-3" id="home-search-results-wrap">
+                {!isSupabaseConfigured && (
+                    <div className="rounded-lg border bg-card/50 p-4" id="home-search-config-error">
+                        <p className="text-sm text-muted-foreground">
+                            Search is unavailable because Supabase is not configured.
+                        </p>
+                    </div>
+                )}
+
                 {query.trim().length > 0 && results.length === 0 && !isLoading && (
                     <div className="rounded-lg border bg-card/50 p-4" id="home-search-empty">
                         <p className="text-sm text-muted-foreground">No prompts found.</p>
