@@ -97,8 +97,11 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
                                         className="block px-4 py-3 hover:bg-muted/30 transition-colors"
                                         id={`home-search-item-${p.id}`}
                                     >
-                                        <div className="flex items-center justify-between gap-4">
-                                            <div className="min-w-0">
+                                        <div
+                                            className="flex items-center justify-between gap-4"
+                                            id={`home-search-item-row-${p.id}`}
+                                        >
+                                            <div className="min-w-0" id={`home-search-item-text-${p.id}`}>
                                                 <p className="text-sm font-semibold truncate">{p.title}</p>
                                                 {p.description && (
                                                     <p className="text-xs text-muted-foreground line-clamp-1">

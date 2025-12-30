@@ -94,7 +94,10 @@ export default function PublicSidebar({
                                         className="px-3 py-2.5 hover:no-underline"
                                         id={`public-sidebar-trigger-${cat.id}`}
                                     >
-                                        <div className="flex items-center justify-between w-full">
+                                        <div
+                                            className="flex items-center justify-between w-full"
+                                            id={`public-sidebar-trigger-row-${cat.id}`}
+                                        >
                                             <Link
                                                 href={buildPromptsHref({
                                                     categoryId: cat.id,
@@ -116,7 +119,10 @@ export default function PublicSidebar({
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent id={`public-sidebar-panel-${cat.id}`}>
-                                        <div className="pl-3 pr-2 pb-2 pt-1 space-y-1">
+                                        <div
+                                            className="pl-3 pr-2 pb-2 pt-1 space-y-1"
+                                            id={`public-sidebar-sub-list-${cat.id}`}
+                                        >
                                             {cat.subcategories.map((sub) => {
                                                 const isActiveSub = selectedSubcategoryId === sub.id;
                                                 return (
