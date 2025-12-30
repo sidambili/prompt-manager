@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import LoginPage from '../page';
+import LoginClient from '../LoginClient';
 
 const navigationMocks = vi.hoisted(() => {
   const useSearchParams = vi.fn((): { get: (key: string) => string | null } => ({
@@ -115,7 +115,7 @@ describe('LoginPage', () => {
     navigationMocks.useRouter.mockReturnValue({ push: navigationMocks.push })
 
     const user = userEvent.setup();
-    render(<LoginPage />);
+    render(<LoginClient />);
 
     await user.type(screen.getByLabelText(/email/i), 'user@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password123');
@@ -132,7 +132,7 @@ describe('LoginPage', () => {
     supabaseMocks.signInWithPassword.mockResolvedValue({ error: new Error('bad credentials') });
 
     const user = userEvent.setup();
-    render(<LoginPage />);
+    render(<LoginClient />);
 
     await user.type(screen.getByLabelText(/email/i), 'user@example.com');
     await user.type(screen.getByLabelText(/password/i), 'wrongpass');
@@ -142,7 +142,7 @@ describe('LoginPage', () => {
   });
 
   it('disables OAuth button when provider is not configured', async () => {
-    render(<LoginPage />);
+    render(<LoginClient />);
 
     const githubButton = screen.getByRole('button', { name: /github/i });
     expect(githubButton).toBeDisabled();

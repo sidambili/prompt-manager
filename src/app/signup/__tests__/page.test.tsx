@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import SignUpPage from '../page';
+import SignUpClient from '../SignUpClient';
 
 const navigationMocks = vi.hoisted(() => {
   const useSearchParams = vi.fn((): { get: (key: string) => string | null } => ({
@@ -127,7 +127,7 @@ describe('SignUpPage', () => {
     navigationMocks.useRouter.mockReturnValue({ push: navigationMocks.push })
 
     const user = userEvent.setup();
-    render(<SignUpPage />);
+    render(<SignUpClient />);
 
     await user.type(screen.getByLabelText(/email/i), 'user@example.com');
     await user.type(screen.getByLabelText(/^password$/i), 'password123');
@@ -144,7 +144,7 @@ describe('SignUpPage', () => {
     });
 
     const user = userEvent.setup();
-    render(<SignUpPage />);
+    render(<SignUpClient />);
 
     await user.type(screen.getByLabelText(/email/i), 'user@example.com');
     await user.type(screen.getByLabelText(/^password$/i), 'password123');
@@ -160,7 +160,7 @@ describe('SignUpPage', () => {
     });
 
     const user = userEvent.setup();
-    render(<SignUpPage />);
+    render(<SignUpClient />);
 
     await user.type(screen.getByLabelText(/email/i), 'user@example.com');
     await user.type(screen.getByLabelText(/^password$/i), 'password123');
@@ -171,7 +171,7 @@ describe('SignUpPage', () => {
   });
 
   it('shows OAuth not configured helper text when providers are disabled', async () => {
-    render(<SignUpPage />);
+    render(<SignUpClient />);
 
     const githubButton = screen.getByRole('button', { name: /github/i });
     expect(githubButton).toBeDisabled();
