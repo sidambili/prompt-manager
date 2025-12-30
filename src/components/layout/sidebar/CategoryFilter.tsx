@@ -61,7 +61,7 @@ export default function CategoryFilter({
                             id={`category-filter-item-${cat.id}`}
                         >
                             <AccordionTrigger
-                                className="px-3 py-2 hover:bg-muted/40 rounded-md transition-all group hover:no-underline"
+                                className="px-3 py-2 hover:bg-muted/40 rounded-md transition-all group hover:no-underline [&[data-state=open]>svg]:rotate-180"
                                 id={`category-filter-trigger-${cat.id}`}
                                 hideDefaultChevron
                             >
@@ -82,6 +82,10 @@ export default function CategoryFilter({
                                     >
                                         {cat.name}
                                     </Link>
+                                    <ChevronDown
+                                        className="h-3.5 w-3.5 text-muted-foreground/50 transition-transform duration-200 group-data-[state=open]:rotate-180"
+                                        aria-hidden="true"
+                                    />
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent
