@@ -64,6 +64,9 @@ describe('updateSession', () => {
     nextResponseRedirect.mockReset();
     getUser.mockReset();
 
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'http://localhost:54321')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon')
+
     nextResponseNext.mockReturnValue({
       cookies: {
         set: vi.fn(),
@@ -118,4 +121,18 @@ describe('updateSession', () => {
     expect(nextResponseRedirect).not.toHaveBeenCalled();
     expect(nextResponseNext).toHaveBeenCalled();
   });
+
+  it('redirects to /auth/config-error when Supabase env vars are missing', async () => {
+    vi.unstubAllEnvs()
+
+    const request = createRequest('/dashboard');
+    await updateSession(request as unknown as never);
+
+    expect(nextResponseRedirect).toHaveBeenCalledTimes(1);
+    const redirectUrl = nextResponseRedirect.mock.calls[0]?.[0] as NextUrl;
+    expect(redirectUrl.pathname).toBe('/auth/config-error');
+    const params = new URLSearchParams(redirectUrl.search);
+    expect(params.get('missing')).toContain('NEXT_PUBLIC_SUPABASE_URL');
+    expect(params.get('missing')).toContain('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  })
 });
