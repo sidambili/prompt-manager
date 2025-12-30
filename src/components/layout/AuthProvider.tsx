@@ -2,6 +2,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { User, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -27,9 +28,28 @@ export default function AuthProvider({
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const supabase = createClient();
+    const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
+        let supabase: ReturnType<typeof createClient>;
+        try {
+            supabase = createClient();
+        } catch {
+            const missing: string[] = [];
+            if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+            if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+
+            if (pathname !== "/auth/config-error") {
+                router.push(`/auth/config-error?missing=${encodeURIComponent(missing.join(","))}`);
+            }
+
+            setIsLoading(false);
+            setSession(null);
+            setUser(null);
+            return;
+        }
+
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
@@ -41,7 +61,7 @@ export default function AuthProvider({
         return () => {
             subscription.unsubscribe();
         };
-    }, [supabase]);
+    }, [pathname, router]);
 
     return (
         <AuthContext.Provider value={{ user, session, isLoading }}>
