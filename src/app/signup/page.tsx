@@ -19,8 +19,14 @@ export default function SignUpPage() {
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get("redirect") ?? "/";
     const router = useRouter();
-    const supabase = createClient();
     const { providers: oauthProviders, isLoading: oauthLoading } = useOAuthProviders();
+
+    const redirectToConfigError = () => {
+        const missing: string[] = [];
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+        if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+        router.push(`/auth/config-error?missing=${encodeURIComponent(missing.join(","))}`);
+    };
 
     const handleOAuthLogin = async (provider: "google" | "github") => {
         if (!oauthProviders[provider]) {
@@ -34,6 +40,15 @@ export default function SignUpPage() {
         try {
             setErrorMessage(null);
             setLoading(true);
+
+            let supabase;
+            try {
+                supabase = createClient();
+            } catch {
+                redirectToConfigError();
+                return;
+            }
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
@@ -55,6 +70,15 @@ export default function SignUpPage() {
         try {
             setErrorMessage(null);
             setLoading(true);
+
+            let supabase;
+            try {
+                supabase = createClient();
+            } catch {
+                redirectToConfigError();
+                return;
+            }
+
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,

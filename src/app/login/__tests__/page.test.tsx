@@ -46,6 +46,8 @@ const supabaseMocks = vi.hoisted(() => {
   const signInWithPassword = vi.fn<SupabaseAuthMock['signInWithPassword']>()
   const signInWithOAuth = vi.fn<SupabaseAuthMock['signInWithOAuth']>()
 
+  const createClient = vi.fn(() => client)
+
   const client: SupabaseClientMock = {
     auth: {
       signInWithPassword,
@@ -56,7 +58,7 @@ const supabaseMocks = vi.hoisted(() => {
   return {
     signInWithPassword,
     signInWithOAuth,
-    createClient: () => client,
+    createClient,
   }
 })
 

@@ -39,6 +39,12 @@ export async function GET(request: Request) {
 
     const redirectBase = getRedirectBase(origin)
 
+    const configErrorRedirect = (missing: string[]) => {
+        const configUrl = new URL('/auth/config-error', redirectBase)
+        configUrl.searchParams.set('missing', missing.join(','))
+        return NextResponse.redirect(configUrl.toString())
+    }
+
     const errorRedirect = (reason: 'missing_code' | 'exchange_failed') => {
         const errorUrl = new URL('/auth/auth-code-error', redirectBase)
         errorUrl.searchParams.set('reason', reason)
@@ -47,7 +53,16 @@ export async function GET(request: Request) {
     }
 
     if (code) {
-        const supabase = await createClient()
+        let supabase: Awaited<ReturnType<typeof createClient>>
+        try {
+            supabase = await createClient()
+        } catch (error) {
+            console.error('Auth callback error: Supabase server client misconfigured', error)
+            const missing: string[] = []
+            if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push('NEXT_PUBLIC_SUPABASE_URL')
+            if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+            return configErrorRedirect(missing)
+        }
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
             return NextResponse.redirect(`${redirectBase}${next}`)
