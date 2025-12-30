@@ -73,8 +73,12 @@ export default function LoginPage() {
             router.push(redirectTo);
         } catch (error) {
             console.error("Login error:", error);
-            const message = error instanceof Error ? error.message : "Login failed.";
-            setErrorMessage(message);
+            if (error instanceof Error && error.message.trim().length > 0) {
+                setErrorMessage(error.message);
+                return;
+            }
+
+            setErrorMessage("Sign-in failed. Please check your email and password and try again.");
         } finally {
             setLoading(false);
         }

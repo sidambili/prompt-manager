@@ -37,19 +37,26 @@ export async function GET(request: Request) {
     // if "next" is in param, use it as the redirect URL
     const next = sanitizeNext(searchParams.get('next'))
 
+    const redirectBase = getRedirectBase(origin)
+
+    const errorRedirect = (reason: 'missing_code' | 'exchange_failed') => {
+        const errorUrl = new URL('/auth/auth-code-error', redirectBase)
+        errorUrl.searchParams.set('reason', reason)
+        errorUrl.searchParams.set('next', next)
+        return NextResponse.redirect(errorUrl.toString())
+    }
+
     if (code) {
         const supabase = await createClient()
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
-            const redirectBase = getRedirectBase(origin)
             return NextResponse.redirect(`${redirectBase}${next}`)
         } else {
             console.error("Auth callback error: Code exchange failed", error);
+            return errorRedirect('exchange_failed')
         }
     } else {
         console.error("Auth callback error: No code provided in query params");
+        return errorRedirect('missing_code')
     }
-
-    // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }
