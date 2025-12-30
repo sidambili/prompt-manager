@@ -90,6 +90,8 @@ It does not compete with them.
 
 ## Getting Started
 
-(Setup instructions…)
+See the main [README.md](../README.md) for setup and deployment instructions.
+
+For self-hosted deployments, refer to [SELF_HOSTING.md](./SELF_HOSTING.md)
 
 ---
