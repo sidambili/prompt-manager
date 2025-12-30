@@ -10,22 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
-const isLocalDev = (): boolean => {
-    if (typeof window === "undefined") return false;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    return (
-        supabaseUrl.includes("localhost") ||
-        supabaseUrl.includes("127.0.0.1") ||
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-    );
-};
-
 export default function SignUpPage() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const isLocalDeploymentMode = process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "local";
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get("redirect") ?? "/";
     const router = useRouter();
@@ -80,9 +70,9 @@ export default function SignUpPage() {
                 router.push(redirectTo);
             } else if (data.user) {
                 // User created but needs email confirmation
-                if (isLocalDev()) {
+                if (isLocalDeploymentMode) {
                     alert(
-                        "Account created! Please check InBucket at http://localhost:54324 " +
+                        "Account created! Please check Mailpit at http://localhost:54324 " +
                         "for the confirmation email link, or sign in directly if email confirmation is disabled."
                     );
                 } else {
