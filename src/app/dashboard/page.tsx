@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useAuth } from "@/components/layout/AuthProvider";
@@ -7,10 +6,18 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-
 import { useState, useEffect } from "react";
 import PromptList from "@/components/prompts/PromptList";
+import CreatePromptModal from "@/components/prompts/CreatePromptModal";
 import { createClient } from "@/lib/supabase/client";
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@/components/ui/empty";
 
 type DashboardPrompt = {
     id: string;
@@ -29,9 +36,9 @@ type DashboardPrompt = {
 };
 
 export default function DashboardPage() {
-    const { user } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
     const [prompts, setPrompts] = useState<DashboardPrompt[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
@@ -49,10 +56,11 @@ export default function DashboardPage() {
             setIsLoading(false);
         };
 
-        if (user) {
-            fetchPrompts();
-        }
+        if (!user) return;
+        fetchPrompts();
     }, [user, supabase]);
+
+    const isDashboardLoading = isAuthLoading || (user ? isLoading : false);
 
     const metrics = [
         { name: "Total Prompts", value: prompts.length.toString(), icon: Database, color: "text-brand" },
@@ -92,7 +100,50 @@ export default function DashboardPage() {
                         </Link>
                     </div>
                     <div className="min-h-[400px]">
-                        <PromptList prompts={prompts} isLoading={isLoading} />
+                        {isDashboardLoading ? (
+                            <PromptList prompts={prompts} isLoading />
+                        ) : !user ? (
+                            <Empty className="bg-card/50">
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <Database />
+                                    </EmptyMedia>
+                                    <EmptyTitle>Sign in to view your dashboard</EmptyTitle>
+                                    <EmptyDescription>
+                                        Your prompts are private to your account. Sign in to view and manage them.
+                                    </EmptyDescription>
+                                </EmptyHeader>
+                                <EmptyContent>
+                                    <Button size="sm" asChild>
+                                        <Link href="/login">Sign in</Link>
+                                    </Button>
+                                </EmptyContent>
+                            </Empty>
+                        ) : prompts.length === 0 ? (
+                            <Empty className="bg-card/50">
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <Database />
+                                    </EmptyMedia>
+                                    <EmptyTitle>No prompts yet</EmptyTitle>
+                                    <EmptyDescription>
+                                        Create your first prompt to start building your library.
+                                    </EmptyDescription>
+                                </EmptyHeader>
+                                <EmptyContent>
+                                    <CreatePromptModal
+                                        trigger={
+                                            <Button size="sm">
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Create prompt
+                                            </Button>
+                                        }
+                                    />
+                                </EmptyContent>
+                            </Empty>
+                        ) : (
+                            <PromptList prompts={prompts} isLoading={false} />
+                        )}
                     </div>
                 </div>
 
