@@ -15,6 +15,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get("redirect") ?? "/";
     const router = useRouter();
@@ -24,15 +25,15 @@ export default function LoginPage() {
     const handleOAuthLogin = async (provider: "google" | "github") => {
         // Check if provider is available
         if (!oauthProviders[provider]) {
-            alert(
+            setErrorMessage(
                 `OAuth with ${provider === "google" ? "Google" : "GitHub"} is not configured. ` +
-                `Please use email/password authentication or configure OAuth in your Supabase instance. ` +
-                `See documentation for self-hosting setup.`
+                `Please use email/password authentication or configure OAuth in your Supabase instance.`
             );
             return;
         }
 
         try {
+            setErrorMessage(null);
             setLoading(true);
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
@@ -43,7 +44,7 @@ export default function LoginPage() {
             if (error) throw error;
         } catch (error) {
             console.error("Authentication error:", error);
-            alert(
+            setErrorMessage(
                 `Failed to sign in with ${provider === "google" ? "Google" : "GitHub"}. ` +
                 `Please try email/password authentication or check your OAuth configuration.`
             );
@@ -54,7 +55,14 @@ export default function LoginPage() {
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (password.length < 6) {
+            setErrorMessage("Password must be at least 6 characters.");
+            return;
+        }
+
         try {
+            setErrorMessage(null);
             setLoading(true);
             const { error } = await supabase.auth.signInWithPassword({
                 email,
@@ -65,7 +73,8 @@ export default function LoginPage() {
             router.push(redirectTo);
         } catch (error) {
             console.error("Login error:", error);
-            alert("Login failed. Check console for details.");
+            const message = error instanceof Error ? error.message : "Login failed.";
+            setErrorMessage(message);
         } finally {
             setLoading(false);
         }
@@ -75,6 +84,12 @@ export default function LoginPage() {
         <div className="flex min-h-screen flex-col items-center justify-center py-2">
             <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
                 <h1 className="text-4xl font-bold mb-8">Sign in to PromptManager</h1>
+
+                {errorMessage && (
+                    <p className="text-sm text-destructive mb-4" role="alert">
+                        {errorMessage}
+                    </p>
+                )}
 
                 <form onSubmit={handleEmailLogin} className="flex flex-col gap-4 w-full max-w-xs mb-8 text-left">
                     <div>
@@ -96,6 +111,7 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            minLength={6}
                         />
                     </div>
                     <Button type="submit" disabled={loading} className="w-full">

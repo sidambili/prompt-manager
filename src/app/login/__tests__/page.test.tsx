@@ -82,8 +82,6 @@ vi.mock('@/lib/auth/hooks', () => {
 })
 
 describe('LoginPage', () => {
-  const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
-
   beforeEach(() => {
     supabaseMocks.signInWithPassword.mockReset();
     supabaseMocks.signInWithOAuth.mockReset();
@@ -93,8 +91,6 @@ describe('LoginPage', () => {
     navigationMocks.useSearchParams.mockReturnValue({
       get: (_key: string) => null,
     })
-    alertSpy.mockClear();
-
     Object.defineProperty(window, 'location', {
       value: {
         href: 'http://localhost/',
@@ -130,17 +126,17 @@ describe('LoginPage', () => {
     expect(navigationMocks.push).toHaveBeenCalledWith('/dashboard');
   });
 
-  it('alerts on email/password login error', async () => {
+  it('shows inline error on email/password login error', async () => {
     supabaseMocks.signInWithPassword.mockResolvedValue({ error: new Error('bad credentials') });
 
     const user = userEvent.setup();
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'user@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'wrong');
+    await user.type(screen.getByLabelText(/password/i), 'wrongpass');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(alertSpy).toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/bad credentials/i);
   });
 
   it('disables OAuth button when provider is not configured', async () => {

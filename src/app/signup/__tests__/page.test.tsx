@@ -164,7 +164,8 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/^password$/i), 'password123');
     await user.click(screen.getByRole('button', { name: /sign up/i }));
 
-    expect(alertSpy).toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/signup failed/i);
   });
 
   it('shows OAuth not configured helper text when providers are disabled', async () => {

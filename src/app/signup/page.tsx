@@ -25,6 +25,7 @@ export default function SignUpPage() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get("redirect") ?? "/";
     const router = useRouter();
@@ -33,7 +34,7 @@ export default function SignUpPage() {
 
     const handleOAuthLogin = async (provider: "google" | "github") => {
         if (!oauthProviders[provider]) {
-            alert(
+            setErrorMessage(
                 `OAuth with ${provider === "google" ? "Google" : "GitHub"} is not configured. ` +
                 `Please use email/password authentication or configure OAuth in your Supabase instance.`
             );
@@ -41,6 +42,7 @@ export default function SignUpPage() {
         }
 
         try {
+            setErrorMessage(null);
             setLoading(true);
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
@@ -51,7 +53,8 @@ export default function SignUpPage() {
             if (error) throw error;
         } catch (error) {
             console.error("Authentication error:", error);
-            alert(`Failed to sign in with ${provider}.`);
+            const message = error instanceof Error ? error.message : `Failed to sign in with ${provider}.`;
+            setErrorMessage(message);
         } finally {
             setLoading(false);
         }
@@ -60,6 +63,7 @@ export default function SignUpPage() {
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            setErrorMessage(null);
             setLoading(true);
             const { data, error } = await supabase.auth.signUp({
                 email,
@@ -85,12 +89,12 @@ export default function SignUpPage() {
                     alert("Account created! Please check your email for the confirmation link.");
                 }
             } else {
-                alert("Signup completed but user data is missing. Please try signing in.");
+                setErrorMessage("Signup completed but user data is missing. Please try signing in.");
             }
         } catch (error) {
             console.error("Signup error:", error);
             const errorMessage = error instanceof Error ? error.message : "Signup failed.";
-            alert(`Signup failed: ${errorMessage}`);
+            setErrorMessage(`Signup failed: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
@@ -101,6 +105,12 @@ export default function SignUpPage() {
             <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
                 <h1 className="text-4xl font-bold mb-8">Create an Account</h1>
                 <p className="mb-8 text-muted-foreground">Join PromptManager to start organizing your prompts.</p>
+
+                {errorMessage && (
+                    <p className="text-sm text-destructive mb-4" role="alert">
+                        {errorMessage}
+                    </p>
+                )}
 
                 <form onSubmit={handleSignUp} className="flex flex-col gap-4 w-full max-w-xs mb-8 text-left">
                     <div>
