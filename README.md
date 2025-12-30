@@ -67,6 +67,28 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Testing
+
+This project uses `vitest` for unit and component integration tests.
+
+Run the test suite:
+
+```bash
+npm test
+```
+
+Watch mode (reruns tests on file changes):
+
+```bash
+npm run test:watch
+```
+
+Vitest UI:
+
+```bash
+npm run test:ui
+```
+
 ## Authentication
 
 PromptManager supports multiple authentication methods:
