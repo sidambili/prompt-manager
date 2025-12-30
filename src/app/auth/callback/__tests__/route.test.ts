@@ -28,6 +28,7 @@ describe('/auth/callback GET', () => {
   beforeEach(() => {
     nextResponseRedirect.mockReset()
     exchangeCodeForSession.mockReset()
+    vi.unstubAllEnvs()
     vi.stubEnv('NODE_ENV', 'development')
   })
 
@@ -89,5 +90,36 @@ describe('/auth/callback GET', () => {
     await GET(request)
 
     expect(nextResponseRedirect).toHaveBeenCalledWith('http://localhost/')
+  })
+
+  it('in production, prefers NEXT_PUBLIC_SITE_URL origin and ignores x-forwarded-host', async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null })
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://app.promptmanager.dev')
+
+    const request = new Request('http://localhost/auth/callback?code=abc&next=%2Fdashboard', {
+      headers: {
+        'x-forwarded-host': 'evil.example.com',
+      },
+    })
+
+    await GET(request)
+
+    expect(nextResponseRedirect).toHaveBeenCalledWith('https://app.promptmanager.dev/dashboard')
+  })
+
+  it('in production, falls back to request origin when NEXT_PUBLIC_SITE_URL is not set', async () => {
+    exchangeCodeForSession.mockResolvedValue({ error: null })
+    vi.stubEnv('NODE_ENV', 'production')
+
+    const request = new Request('http://localhost/auth/callback?code=abc&next=%2Fdashboard', {
+      headers: {
+        'x-forwarded-host': 'evil.example.com',
+      },
+    })
+
+    await GET(request)
+
+    expect(nextResponseRedirect).toHaveBeenCalledWith('http://localhost/dashboard')
   })
 })
