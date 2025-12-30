@@ -9,6 +9,7 @@ import { Plus, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/layout/AuthProvider";
 import { useRouter } from "next/navigation";
+import { slugify, buildSlugId } from "@/lib/slug";
 import {
     Dialog,
     DialogContent,
@@ -94,6 +95,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
         const parsedValues = formSchema.parse(values);
 
         try {
+            const slug = slugify(parsedValues.title);
             const { data, error } = await supabase
                 .from("prompts")
                 .insert({
@@ -103,6 +105,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                     description: parsedValues.description,
                     subcategory_id: parsedValues.subcategory_id,
                     is_public: parsedValues.is_public,
+                    slug,
                 })
                 .select()
                 .single();
@@ -113,7 +116,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
             form.reset();
             router.refresh();
             if (data) {
-                router.push(`/dashboard/prompts/${data.id}`);
+                router.push(`/prompts/${buildSlugId(slug, data.id)}`);
             }
         } catch (error) {
             console.error("Error creating prompt:", error);
