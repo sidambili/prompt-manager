@@ -1,5 +1,5 @@
 import { notFound, permanentRedirect, redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClientOrRedirect } from '@/lib/supabase/server-rsc';
 import { parseSlugId } from '@/lib/slug';
 import PromptEditor from '@/components/prompts/PromptEditor';
 
@@ -15,7 +15,7 @@ export default async function EditPromptPage({ params }: Props) {
     notFound();
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientOrRedirect();
 
   // Verify authentication
   const {

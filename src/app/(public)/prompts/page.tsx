@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClientOrRedirect } from "@/lib/supabase/server-rsc";
 import PublicPromptList, { type PublicPrompt } from "@/components/prompts/PublicPromptList";
 
 export default async function PublicPromptsPage({
@@ -6,7 +6,7 @@ export default async function PublicPromptsPage({
 }: {
     searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-    const supabase = await createClient();
+    const supabase = await createClientOrRedirect();
     const params = (await searchParams) ?? {};
 
     // Querystring-driven filters so browse pages are shareable.

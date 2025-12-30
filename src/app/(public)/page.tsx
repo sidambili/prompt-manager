@@ -1,5 +1,5 @@
 
-import { createClient } from "@/lib/supabase/server";
+import { createClientOrRedirect } from "@/lib/supabase/server-rsc";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { ArrowRight } from "lucide-react";
 import HomePromptSearch from "@/components/prompts/HomePromptSearch";
 
 export default async function Home() {
-  const supabase = await createClient();
+  const supabase = await createClientOrRedirect();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {

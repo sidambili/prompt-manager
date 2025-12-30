@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createClientOrRedirect } from "@/lib/supabase/server-rsc";
 import PublicSidebar from "@/components/layout/PublicSidebar";
 
 type PublicSubcategory = {
@@ -18,7 +18,7 @@ export default async function PublicPromptsLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const supabase = await createClient();
+    const supabase = await createClientOrRedirect();
 
     // Categories are fetched on the server for a fast first render.
     const { data: categories } = await supabase

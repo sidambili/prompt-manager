@@ -1,6 +1,6 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createClientOrNull, createClientOrRedirect } from '@/lib/supabase/server-rsc';
 import { parseSlugId, buildSlugId } from '@/lib/slug';
 import PromptViewer from '@/components/prompts/PromptViewer';
 
@@ -13,7 +13,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const parsed = parseSlugId(slugId);
   if (!parsed) return { title: 'Prompt Not Found' };
 
-  const supabase = await createClient();
+  const supabase = await createClientOrNull();
+  if (!supabase) return { title: 'Prompt Not Found' };
+
   const { data: prompt } = await supabase
     .from('prompts')
     .select('title, description, slug, is_public, is_listed')
@@ -49,7 +51,7 @@ export default async function PromptPage({ params }: Props) {
     notFound();
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientOrRedirect();
 
   // Fetch prompt by id (authoritative)
   const { data: prompt, error } = await supabase
