@@ -172,6 +172,38 @@ describe('updateSession', () => {
       expect(redirectUrl.pathname).toBe('/dashboard');
     });
 
+    it('redirects unauthenticated user from a public shell route to /login', async () => {
+      getUser.mockResolvedValue({ data: { user: null } });
+
+      const request = createRequest('/prompts');
+      await updateSession(request as unknown as never);
+
+      expect(nextResponseRedirect).toHaveBeenCalledTimes(1);
+      const redirectUrl = nextResponseRedirect.mock.calls[0]?.[0] as NextUrl;
+      expect(redirectUrl.pathname).toBe('/login');
+    });
+
+    it('redirects authenticated user from a public shell route to /dashboard', async () => {
+      getUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+
+      const request = createRequest('/prompts');
+      await updateSession(request as unknown as never);
+
+      expect(nextResponseRedirect).toHaveBeenCalledTimes(1);
+      const redirectUrl = nextResponseRedirect.mock.calls[0]?.[0] as NextUrl;
+      expect(redirectUrl.pathname).toBe('/dashboard');
+    });
+
+    it('does not redirect unauthenticated user on /login', async () => {
+      getUser.mockResolvedValue({ data: { user: null } });
+
+      const request = createRequest('/login');
+      await updateSession(request as unknown as never);
+
+      expect(nextResponseRedirect).not.toHaveBeenCalled();
+      expect(nextResponseNext).toHaveBeenCalled();
+    });
+
     it('does not redirect unauthenticated user from / when mode is cloud', async () => {
       getDeploymentModeMock.mockReturnValue('cloud');
       getUser.mockResolvedValue({ data: { user: null } });
