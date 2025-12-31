@@ -222,13 +222,13 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0" id="create-prompt-form">
-                        <div className="flex-1 min-h-0 overflow-hidden" id="create-prompt-body-container">
+                        <div className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden" id="create-prompt-body-container">
                             <div
-                                className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x border-b h-full"
+                                className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x border-b md:h-full"
                                 id="create-prompt-grid"
                             >
                                 {/* Metadata Section */}
-                                <div className="md:col-span-2 p-8 space-y-8 bg-muted/5 overflow-y-auto" id="create-prompt-metadata-section">
+                                <div className="md:col-span-2 p-8 space-y-8 bg-muted/5 md:overflow-y-auto" id="create-prompt-metadata-section">
                                     <FormField
                                         control={form.control}
                                         name="title"
@@ -403,8 +403,8 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                 </div>
 
                                 {/* Content Section */}
-                                <div className="md:col-span-3 flex flex-col bg-background overflow-hidden" id="create-prompt-content-section">
-                                    <div className="flex-1 flex flex-col p-8 space-y-6 min-h-0 overflow-hidden" id="create-prompt-editor-container">
+                                <div className="md:col-span-3 flex flex-col bg-background md:overflow-hidden" id="create-prompt-content-section">
+                                    <div className="flex-1 flex flex-col p-8 space-y-6 min-h-0 md:overflow-hidden" id="create-prompt-editor-container">
                                         <FormField
                                             control={form.control}
                                             name="content"
@@ -437,7 +437,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                     </div>
 
                                     <div className="px-8 pb-8 pt-0 shrink-0 border-t bg-muted/5" id="create-prompt-variables-panel">
-                                        <div className="mt-4 overflow-y-auto max-h-[350px]" id="create-prompt-variables-scroll">
+                                        <div className="mt-4 max-h-none overflow-visible md:overflow-y-auto md:max-h-[350px]" id="create-prompt-variables-scroll">
                                             <PromptVariables
                                                 variables={variables}
                                                 values={values}
