@@ -185,7 +185,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
             <DialogTrigger asChild>
                 {trigger || (
                     <Button
-                        className="rounded-lg bg-brand text-brand-foreground hover:bg-brand/90 shadow-sm transition-all h-8 px-3 text-xs font-semibold"
+                        className="rounded-sm bg-brand text-brand-foreground hover:bg-brand/90 shadow-sm transition-all h-8 px-3 text-xs font-semibold"
                         id="create-prompt-trigger"
                     >
                         <Plus className="mr-1.5 h-3.5 w-3.5" /> New Prompt
@@ -314,7 +314,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                     />
 
                                     <div className="pt-2" id="create-prompt-visibility-section">
-                                        <div className="rounded-lg border bg-background/50 p-4 space-y-4" id="create-prompt-visibility-card">
+                                        <div className="rounded-sm border bg-background/50 p-4 space-y-4" id="create-prompt-visibility-card">
                                             <div className="space-y-1" id="create-prompt-visibility-header">
                                                 <div className="text-sm font-medium" id="create-prompt-visibility-title">Visibility</div>
                                                 <div className="text-xs text-muted-foreground" id="create-prompt-visibility-description">

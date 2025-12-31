@@ -107,7 +107,7 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
 
             <div className="mt-3" id="home-search-results-wrap">
                 {!isSupabaseConfigured && (
-                    <div className="rounded-lg border bg-card/50 p-4" id="home-search-config-error">
+                    <div className="rounded-sm border bg-card/50 p-4" id="home-search-config-error">
                         <p className="text-sm text-muted-foreground">
                             Search is unavailable because Supabase is not configured.
                         </p>
@@ -115,7 +115,7 @@ export default function HomePromptSearch({ initialQuery }: HomePromptSearchProps
                 )}
 
                 {query.trim().length > 0 && results.length === 0 && !isLoading && (
-                    <div className="rounded-lg border bg-card/50 p-4" id="home-search-empty">
+                    <div className="rounded-sm border bg-card/50 p-4" id="home-search-empty">
                         <p className="text-sm text-muted-foreground">No prompts found.</p>
                     </div>
                 )}

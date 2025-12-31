@@ -40,7 +40,7 @@ export default function PromptCard({ prompt }: PromptCardProps) {
 
     return (
         <Link href={`/dashboard/prompts/${prompt.id}`}>
-            <div className="group flex items-center justify-between p-3 rounded-lg border bg-card/30 hover:bg-accent/40 hover:border-brand/40 transition-all cursor-pointer">
+            <div className="group flex items-center justify-between p-3 rounded-sm border bg-card/30 hover:bg-accent/40 hover:border-brand/40 transition-all cursor-pointer">
                 <div className="flex flex-1 items-center gap-4 min-w-0">
                     <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">

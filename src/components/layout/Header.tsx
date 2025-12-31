@@ -68,10 +68,10 @@ export default function Header() {
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-8 w-8 rounded-lg p-0 hover:bg-accent">
-                            <Avatar className="h-7 w-7 rounded-lg">
+                        <Button variant="ghost" className="relative h-8 w-8 rounded-sm p-0 hover:bg-accent">
+                            <Avatar className="h-7 w-7 rounded-sm">
                                 <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.email ?? ""} />
-                                <AvatarFallback className="rounded-lg text-[10px] bg-brand/10 text-brand">
+                                <AvatarFallback className="rounded-sm text-[10px] bg-brand/10 text-brand">
                                     {user?.email?.charAt(0).toUpperCase() ?? "U"}
                                 </AvatarFallback>
                             </Avatar>

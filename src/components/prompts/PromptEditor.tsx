@@ -263,8 +263,8 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
           className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-2"
           id="global-toast"
         >
-          <div className="bg-popover border border-border shadow-2xl rounded-lg px-4 py-2.5 flex items-center gap-2.5">
-            <div className="h-4 w-4 rounded-full bg-brand/10 flex items-center justify-center">
+          <div className="bg-popover border border-border shadow-2xl rounded-sm px-4 py-2.5 flex items-center gap-2.5">
+            <div className="h-4 w-4 rounded-sm bg-brand/10 flex items-center justify-center">
               <Check className="h-3 w-3 text-brand" />
             </div>
             <span className="text-xs font-medium">{toastMessage}</span>
@@ -407,8 +407,8 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                       Output
                     </TabsTrigger>
                   </TabsList>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-brand/5 border border-brand/10">
-                    <div className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-brand/5 border border-brand/10">
+                    <div className="h-1.5 w-1.5 rounded-sm bg-brand animate-pulse" />
                     <span className="text-[10px] text-brand-400 font-mono">EDITING</span>
                   </div>
                 </div>
@@ -457,7 +457,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                       )}
                     </pre>
                   </ScrollArea>
-                  <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-lg p-3">
+                  <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3">
                     <div className="text-[11px] text-muted-foreground">
                       Filled with{' '}
                       <span className="font-mono text-brand">

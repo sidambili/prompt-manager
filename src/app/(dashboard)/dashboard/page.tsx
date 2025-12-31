@@ -79,7 +79,7 @@ export default function DashboardPage() {
 
             <div className="flex flex-wrap gap-4">
                 {metrics.map((metric) => (
-                    <div key={metric.name} className="flex items-center gap-3 px-4 py-2 border rounded-lg bg-card/50 min-w-[160px]">
+                    <div key={metric.name} className="flex items-center gap-3 px-4 py-2 border rounded-sm bg-card/50 min-w-[160px]">
                         <div className={cn("p-2 rounded-md bg-background border", metric.color)}>
                             <metric.icon className="h-4 w-4" />
                         </div>
@@ -150,7 +150,7 @@ export default function DashboardPage() {
                 <div className="lg:col-span-4 space-y-6">
                     <div className="space-y-4">
                         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b pb-2">Technical Summary</h2>
-                        <div className="rounded-lg border bg-card/50 p-4 space-y-3">
+                        <div className="rounded-sm border bg-card/50 p-4 space-y-3">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Active Subcategories</span>
                                 <span className="font-mono font-medium">{new Set(prompts.map(p => p.subcategory_id)).size}</span>

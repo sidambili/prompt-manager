@@ -28,7 +28,7 @@ export default function PromptList({ prompts, isLoading }: PromptListProps) {
         return (
             <div className="flex flex-col gap-3">
                 {[...Array(6)].map((_, i) => (
-                    <div key={i} className="h-[60px] rounded-lg bg-card/50 border animate-pulse" />
+                    <div key={i} className="h-[60px] rounded-sm bg-card/50 border animate-pulse" />
                 ))}
             </div>
         );
@@ -37,7 +37,7 @@ export default function PromptList({ prompts, isLoading }: PromptListProps) {
     if (prompts.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-center border rounded-xl bg-card/20 border-dashed">
-                <div className="rounded-full bg-muted p-3 mb-3">
+                <div className="rounded-sm bg-muted p-3 mb-3">
                     <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
