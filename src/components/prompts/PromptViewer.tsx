@@ -329,26 +329,23 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         <div className="lg:col-span-8 space-y-4" id="content-column">
           <Tabs defaultValue="source" className="w-full flex flex-col" id="content-tabs">
             <div className="flex items-center justify-between border-b mb-4">
-              <TabsList className="bg-transparent h-auto p-0 gap-8 justify-start">
+              <TabsList className="bg-transparent h-auto p-0 gap-2 justify-start">
                 <TabsTrigger
                   value="source"
-                  className="h-9 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
+                  className="h-9 px-5 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                   id="tab-source"
                 >
                   Template
                 </TabsTrigger>
                 <TabsTrigger
                   value="preview"
-                  className="h-9 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
+                  className="h-9 px-5 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                   id="tab-preview"
                 >
                   Output
                 </TabsTrigger>
               </TabsList>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-brand/5 border border-brand/10">
-                <div className="h-1.5 w-1.5 rounded-sm bg-brand animate-pulse" />
-                <span className="text-[10px] text-brand-400 font-mono">LIVE_SYNC</span>
-              </div>
+
             </div>
 
             <TabsContent
