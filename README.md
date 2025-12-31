@@ -17,6 +17,7 @@ An open-source, self-hostable prompt management platform for automation engineer
 
 - Node.js 18+ and npm
 - Supabase account (cloud or self-hosted)
+- Docker (for local Supabase development)
 
 ### Local Development
 
@@ -39,7 +40,6 @@ cp .env.example .env.local
 # Edit .env.local with your Supabase credentials
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_DEPLOYMENT_MODE=cloud
 ```
 
 4. Set up Supabase:
@@ -98,35 +98,27 @@ PromptManager supports multiple authentication methods:
 
 For self-hosted deployments, OAuth providers need to be configured in your Supabase instance. The application automatically detects OAuth availability and shows/hides OAuth buttons accordingly.
 
-See the [Self-Hosting Guide](docs/SELF_HOSTING.md) for detailed authentication setup instructions.
+See the [Authentication Guide](docs/features/auth/README.md) for detailed authentication setup instructions.
 
 ## Self-Hosting
 
 PromptManager is designed to be self-hostable. For detailed self-hosting instructions, including OAuth configuration, see the [Self-Hosting Guide](docs/SELF_HOSTING.md).
 
-### Quick Self-Hosting Steps
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-1. Clone the repository
-2. Set up Supabase (self-hosted or cloud)
-3. Configure environment variables
-4. Run database migrations
-5. Build and deploy
-
-See [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) for complete instructions.
 
 ## Documentation
 
-- [Product Requirements Document](docs/PRD.md)
 - [Architecture Documentation](docs/ARCHITECTURE.md)
 - [Self-Hosting Guide](docs/SELF_HOSTING.md)
-
-## Learn More
-
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Supabase Documentation](https://supabase.com/docs)
+- Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details
 
-## Deploy on Vercel
+## Contributing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+PromptManager is open-source software licensed under the [MIT License](LICENSE).
