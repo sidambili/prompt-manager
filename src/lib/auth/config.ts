@@ -1,3 +1,5 @@
+import { getPublicDeploymentMode } from "@/lib/deployment";
+
 /**
  * Authentication configuration for PromptManager.
  *
@@ -11,20 +13,6 @@ interface OAuthProviderAvailability {
     google: boolean;
     github: boolean;
 }
-
-type DeploymentMode = "cloud" | "self-hosted" | "local";
-
-/**
- * Gets the current deployment mode.
- * Defaults to "cloud" if not specified, as it is the most common managed target.
- */
-const getDeploymentMode = (): DeploymentMode => {
-    const mode = process.env.NEXT_PUBLIC_DEPLOYMENT_MODE as DeploymentMode;
-    if (["cloud", "self-hosted", "local"].includes(mode)) {
-        return mode;
-    }
-    return "cloud";
-};
 
 /**
  * Determines if a specific OAuth provider is enabled.
@@ -50,9 +38,9 @@ const isProviderEnabled = (provider: "google" | "github"): boolean => {
     }
 
     // Priority 2: Mode-based Default
-    const mode = getDeploymentMode();
+    const mode = getPublicDeploymentMode();
     if (mode === "cloud") {
-        return true; // We assume cloud users want/have OAuth configured by default
+        return true; // Cloud users want/have OAuth configured by default
     }
 
     // "local" or "self-hosted" require explicit enabling because they require

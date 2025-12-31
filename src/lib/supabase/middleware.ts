@@ -1,6 +1,7 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getDeploymentMode } from '@/lib/deployment'
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
@@ -63,6 +64,26 @@ export async function updateSession(request: NextRequest) {
     // of sync and terminate the user's session prematurely!
 
     const { data: { user } } = await supabase.auth.getUser()
+
+    // Deployment Mode: Self-hosted routing policy
+    // In self-hosted mode, the public site shell should not be accessible.
+    // Allow auth-related pages, dashboard routes, and API routes.
+    if (getDeploymentMode() === 'self-hosted') {
+        const pathname = request.nextUrl.pathname
+        const isAllowedPublicPath =
+            pathname === '/login' ||
+            pathname === '/signup' ||
+            pathname.startsWith('/auth') ||
+            pathname.startsWith('/dashboard') ||
+            pathname.startsWith('/api')
+
+        if (!isAllowedPublicPath) {
+            const url = request.nextUrl.clone()
+            url.pathname = user ? '/dashboard' : '/login'
+            url.search = ''
+            return NextResponse.redirect(url)
+        }
+    }
 
     // Protected routes: redirect to login if not authenticated
     if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
