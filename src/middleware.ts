@@ -1,13 +1,8 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
-import { getDeploymentMode } from '@/lib/deployment'
 
 export async function middleware(request: NextRequest) {
-    const response = await updateSession(request)
-    response.headers.set('x-pm-middleware', '1')
-    response.headers.set('x-pm-deployment-mode', getDeploymentMode())
-    response.headers.set('x-pm-pathname', request.nextUrl.pathname)
-    return response
+    return await updateSession(request)
 }
 
 export const config = {
