@@ -1,6 +1,7 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getDeploymentMode } from '@/lib/deployment'
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
@@ -63,6 +64,18 @@ export async function updateSession(request: NextRequest) {
     // of sync and terminate the user's session prematurely!
 
     const { data: { user } } = await supabase.auth.getUser()
+
+    // Deployment Mode: Self-hosted routing policy
+    // In self-hosted mode, the root path '/' should act as the app entry point
+    if (getDeploymentMode() === 'self-hosted' && request.nextUrl.pathname === '/') {
+        const url = request.nextUrl.clone()
+        if (user) {
+            url.pathname = '/dashboard'
+        } else {
+            url.pathname = '/login'
+        }
+        return NextResponse.redirect(url)
+    }
 
     // Protected routes: redirect to login if not authenticated
     if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {

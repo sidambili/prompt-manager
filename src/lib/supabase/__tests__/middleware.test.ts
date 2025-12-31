@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { updateSession } from '../middleware';
 
+// Mock the deployment module
+const getDeploymentModeMock = vi.fn();
+vi.mock('@/lib/deployment', () => ({
+  getDeploymentMode: () => getDeploymentModeMock(),
+}));
+
 type NextUrl = {
   pathname: string;
   search: string;
@@ -66,6 +72,9 @@ describe('updateSession', () => {
 
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'http://localhost:54321')
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon')
+    
+    // Default to cloud mode for existing tests
+    getDeploymentModeMock.mockReturnValue('cloud');
 
     nextResponseNext.mockReturnValue({
       cookies: {
@@ -134,5 +143,44 @@ describe('updateSession', () => {
     const params = new URLSearchParams(redirectUrl.search);
     expect(params.get('missing')).toContain('NEXT_PUBLIC_SUPABASE_URL');
     expect(params.get('missing')).toContain('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  })
+  });
+
+  describe('in self-hosted mode', () => {
+    beforeEach(() => {
+      getDeploymentModeMock.mockReturnValue('self-hosted');
+    });
+
+    it('redirects unauthenticated user from / to /login', async () => {
+      getUser.mockResolvedValue({ data: { user: null } });
+
+      const request = createRequest('/');
+      await updateSession(request as unknown as never);
+
+      expect(nextResponseRedirect).toHaveBeenCalledTimes(1);
+      const redirectUrl = nextResponseRedirect.mock.calls[0]?.[0] as NextUrl;
+      expect(redirectUrl.pathname).toBe('/login');
+    });
+
+    it('redirects authenticated user from / to /dashboard', async () => {
+      getUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+
+      const request = createRequest('/');
+      await updateSession(request as unknown as never);
+
+      expect(nextResponseRedirect).toHaveBeenCalledTimes(1);
+      const redirectUrl = nextResponseRedirect.mock.calls[0]?.[0] as NextUrl;
+      expect(redirectUrl.pathname).toBe('/dashboard');
+    });
+
+    it('does not redirect unauthenticated user from / when mode is cloud', async () => {
+      getDeploymentModeMock.mockReturnValue('cloud');
+      getUser.mockResolvedValue({ data: { user: null } });
+
+      const request = createRequest('/');
+      await updateSession(request as unknown as never);
+
+      expect(nextResponseRedirect).not.toHaveBeenCalled();
+      expect(nextResponseNext).toHaveBeenCalled();
+    });
+  });
 });
