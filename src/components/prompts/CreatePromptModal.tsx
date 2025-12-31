@@ -193,7 +193,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                 )}
             </DialogTrigger>
             <DialogContent
-                className="sm:max-w-[900px] p-0 overflow-hidden border-border bg-card"
+                className="sm:max-w-[900px] p-0 overflow-hidden border-border bg-card h-[90vh] max-h-[800px] flex flex-col"
                 id="create-prompt-dialog-content"
             >
                 <DialogHeader className="px-6 py-4 border-b bg-muted/30" id="create-prompt-dialog-header">
@@ -221,13 +221,14 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                 </DialogHeader>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col" id="create-prompt-form">
-                        <div
-                            className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x border-b"
-                            id="create-prompt-grid"
-                        >
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0" id="create-prompt-form">
+                        <div className="flex-1 min-h-0 overflow-hidden" id="create-prompt-body-container">
+                            <div
+                                className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x border-b h-full"
+                                id="create-prompt-grid"
+                            >
                             {/* Metadata Section */}
-                            <div className="md:col-span-2 p-6 space-y-6 bg-muted/10" id="create-prompt-metadata-section">
+                            <div className="md:col-span-2 p-6 space-y-6 bg-muted/10 overflow-y-auto" id="create-prompt-metadata-section">
                                 <FormField
                                     control={form.control}
                                     name="title"
@@ -402,45 +403,50 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                             </div>
 
                             {/* Content Section */}
-                            <div className="md:col-span-3 p-6 bg-background space-y-4" id="create-prompt-content-section">
-                                <FormField
-                                    control={form.control}
-                                    name="content"
-                                    render={({ field }) => (
-                                        <FormItem className="h-full flex flex-col" id="create-prompt-content-field">
-                                            <FormLabel
-                                                className="text-sm font-medium flex justify-between items-center"
-                                                id="create-prompt-content-label"
-                                            >
-                                                Prompt
-                                                <span className="text-xs font-normal text-muted-foreground" id="create-prompt-content-hint-inline">
-                                                    Use {"{{var}}"} for variables
-                                                </span>
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Textarea
-                                                    placeholder="Paste or write your prompt template here..."
-                                                    className="flex-1 min-h-[320px] font-mono text-[13px] leading-relaxed bg-muted/20 border-border/50 focus:border-brand transition-all resize-none p-4"
-                                                    id="create-prompt-content-input"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <div className="text-xs text-muted-foreground" id="create-prompt-content-hint">
-                                                Tip: add placeholders like {"{{customer_name}}"} or {"{{service_date}}"}.
-                                            </div>
-                                            <FormMessage className="text-[10px]" />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <div className="pt-2" id="create-prompt-variables-panel">
-                                    <PromptVariables
-                                        variables={variables}
-                                        values={values}
-                                        onValueChange={(key, value) => setValues({ ...values, [key]: value })}
-                                        missingCount={missingCount}
+                            <div className="md:col-span-3 flex flex-col bg-background overflow-hidden" id="create-prompt-content-section">
+                                <div className="flex-1 flex flex-col p-6 space-y-4 min-h-0 overflow-hidden" id="create-prompt-editor-container">
+                                    <FormField
+                                        control={form.control}
+                                        name="content"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1 flex flex-col min-h-0" id="create-prompt-content-field">
+                                                <FormLabel
+                                                    className="text-sm font-medium flex justify-between items-center shrink-0"
+                                                    id="create-prompt-content-label"
+                                                >
+                                                    Prompt
+                                                    <span className="text-xs font-normal text-muted-foreground" id="create-prompt-content-hint-inline">
+                                                        Use {"{{var}}"} for variables
+                                                    </span>
+                                                </FormLabel>
+                                                <FormControl className="flex-1 min-h-0">
+                                                    <Textarea
+                                                        placeholder="Paste or write your prompt template here..."
+                                                        className="flex-1 min-h-0 font-mono text-[13px] leading-relaxed bg-muted/20 border-border/50 focus:border-brand transition-all resize-none p-4 overflow-y-auto"
+                                                        id="create-prompt-content-input"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <div className="text-xs text-muted-foreground shrink-0" id="create-prompt-content-hint">
+                                                    Tip: add placeholders like {"{{customer_name}}"} or {"{{service_date}}"}.
+                                                </div>
+                                                <FormMessage className="text-[10px] shrink-0" />
+                                            </FormItem>
+                                        )}
                                     />
                                 </div>
+
+                                <div className="px-6 pb-6 pt-0 shrink-0 border-t bg-muted/5" id="create-prompt-variables-panel">
+                                    <div className="mt-4 overflow-y-auto max-h-[200px]" id="create-prompt-variables-scroll">
+                                        <PromptVariables
+                                            variables={variables}
+                                            values={values}
+                                            onValueChange={(key, value) => setValues({ ...values, [key]: value })}
+                                            missingCount={missingCount}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                             </div>
                         </div>
 
