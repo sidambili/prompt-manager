@@ -263,7 +263,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                                             <SelectValue placeholder="Select collection" />
                                                         </SelectTrigger>
                                                     </FormControl>
-                                                    <SelectContent className="bg-card border-border" id="create-prompt-category-content">
+                                                    <SelectContent className="bg-card border-border z-[110]" id="create-prompt-category-content">
                                                         {categories.map((cat) => (
                                                             <div key={cat.id} id={`create-prompt-category-group-${cat.id}`}>
                                                                 <div
