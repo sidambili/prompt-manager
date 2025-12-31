@@ -7,7 +7,7 @@ export type DeploymentMode = 'cloud' | 'self-hosted' | 'local';
  * Priority:
  * 1. DEPLOYMENT_MODE (Server-only authoritative flag)
  * 2. NEXT_PUBLIC_DEPLOYMENT_MODE (Legacy/Client-shared flag)
- * 3. 'cloud' (Default)
+ * 3. 'self-hosted' (Default)
  */
 export function getDeploymentMode(): DeploymentMode {
   const serverMode = process.env.DEPLOYMENT_MODE;
