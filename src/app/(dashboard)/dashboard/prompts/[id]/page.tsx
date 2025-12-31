@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/layout/AuthProvider";
+import { parseSlugId } from "@/lib/slug";
 import PromptViewer from "@/components/prompts/PromptViewer";
 
 export default function PromptDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,10 +19,11 @@ export default function PromptDetailPage({ params }: { params: Promise<{ id: str
 
     useEffect(() => {
         const fetchPrompt = async () => {
+            const { id: actualId } = parseSlugId(id) || { id };
             const { data, error } = await supabase
                 .from("prompts")
                 .select("*, subcategory:subcategories(name, category:categories(name))")
-                .eq("id", id)
+                .eq("id", actualId)
                 .single();
 
             if (error || !data) {

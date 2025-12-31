@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/layout/AuthProvider';
+import { parseSlugId } from '@/lib/slug';
 import PromptEditor from '@/components/prompts/PromptEditor';
 import { Loader2 } from 'lucide-react';
 
@@ -23,10 +24,11 @@ export default function EditPromptPage({ params }: { params: Promise<{ id: strin
         }
 
         const fetchPrompt = async () => {
+            const { id: actualId } = parseSlugId(id) || { id };
             const { data, error } = await supabase
                 .from('prompts')
                 .select('*')
-                .eq('id', id)
+                .eq('id', actualId)
                 .single();
 
             if (error || !data) {
