@@ -394,14 +394,14 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                   <TabsList className="bg-transparent h-auto p-0 gap-8 justify-start">
                     <TabsTrigger
                       value="source"
-                      className="h-9 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
+                      className="h-9 px-0 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                       id="tab-source"
                     >
                       Template
                     </TabsTrigger>
                     <TabsTrigger
                       value="preview"
-                      className="h-9 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
+                      className="h-9 px-0 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                       id="tab-preview"
                     >
                       Output
