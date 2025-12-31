@@ -88,11 +88,10 @@ function PromptInline({
           return (
             <span
               key={idx}
-              className={`inline-flex items-center px-1.5 py-0.5 rounded ${
-                isFilled
-                  ? 'bg-primary/20 text-primary border border-primary/30'
-                  : 'bg-muted text-muted-foreground border border-border'
-              }`}
+              className={`inline-flex items-center px-1.5 py-0.5 rounded ${isFilled
+                ? 'bg-primary/20 text-primary border border-primary/30'
+                : 'bg-muted text-muted-foreground border border-border'
+                }`}
               id={`variable-chip-${idx}`}
             >
               {isFilled ? value : `{{${raw}}}`}
@@ -115,18 +114,21 @@ interface PromptViewerProps {
     subcategory_id: string;
     is_public: boolean;
     is_listed: boolean;
+    tags: string[];
     created_at: string;
     updated_at: string;
     user_id: string;
     subcategory:
-      | {
-          name: string;
-          categories: { name: string } | { name: string }[];
-        }
-      | {
-          name: string;
-          categories: { name: string } | { name: string }[];
-        }[];
+    | {
+      name: string;
+      category?: { name: string } | { name: string }[];
+      categories?: { name: string } | { name: string }[];
+    }
+    | {
+      name: string;
+      category?: { name: string } | { name: string }[];
+      categories?: { name: string } | { name: string }[];
+    }[];
   };
 }
 
@@ -216,13 +218,15 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     }
   };
 
-  const canonicalUrl = `/prompts/${buildSlugId(prompt.slug, prompt.id)}`;
+  const canonicalUrl = `/dashboard/prompts/${buildSlugId(prompt.slug, prompt.id)}`;
   const editUrl = `${canonicalUrl}/edit`;
 
   const subcategory = Array.isArray(prompt.subcategory)
     ? prompt.subcategory[0]
     : prompt.subcategory;
-  const categoryData = subcategory?.categories;
+
+  // Handle nested aliased category
+  const categoryData = subcategory?.category || subcategory?.categories;
   const category = Array.isArray(categoryData) ? categoryData[0] : categoryData;
 
   return (
@@ -236,8 +240,8 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
           className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-2"
           id="global-toast"
         >
-          <div className="bg-popover border border-border shadow-2xl rounded-lg px-4 py-2.5 flex items-center gap-2.5">
-            <div className="h-4 w-4 rounded-full bg-brand/10 flex items-center justify-center">
+          <div className="bg-popover border border-border shadow-2xl rounded-sm px-4 py-2.5 flex items-center gap-2.5">
+            <div className="h-4 w-4 rounded-sm bg-brand/10 flex items-center justify-center">
               <Check className="h-3 w-3 text-brand" />
             </div>
             <span className="text-xs font-medium">{toastMessage}</span>
@@ -341,8 +345,8 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   Output
                 </TabsTrigger>
               </TabsList>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-brand/5 border border-brand/10">
-                <div className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-brand/5 border border-brand/10">
+                <div className="h-1.5 w-1.5 rounded-sm bg-brand animate-pulse" />
                 <span className="text-[10px] text-brand-400 font-mono">LIVE_SYNC</span>
               </div>
             </div>
@@ -353,7 +357,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               id="pane-source"
             >
               <ScrollArea
-                className="min-h-[500px] max-h-[700px] rounded-xl border bg-card/40 backdrop-blur-sm p-6"
+                className="min-h-[500px] max-h-[700px] rounded-sm border bg-card/40 backdrop-blur-sm p-6"
                 id="source-view-scroll"
               >
                 <PromptInline content={prompt.content} values={values} />
@@ -366,7 +370,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               id="pane-preview"
             >
               <ScrollArea
-                className="min-h-[500px] max-h-[700px] rounded-xl border bg-muted/30 p-6"
+                className="min-h-[500px] max-h-[700px] rounded-sm border bg-muted/30 p-6"
                 id="preview-view-scroll"
               >
                 <pre
@@ -380,7 +384,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   )}
                 </pre>
               </ScrollArea>
-              <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-lg p-3">
+              <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3">
                 <div className="text-[11px] text-muted-foreground">
                   Filled with{' '}
                   <span className="font-mono text-brand">
@@ -407,7 +411,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         <div className="lg:col-span-4 space-y-6" id="inspector-column">
           {/* Variables Inspector */}
           <div
-            className="rounded-xl border bg-card/50 shadow-sm overflow-hidden"
+            className="rounded-sm border bg-card/50 shadow-sm overflow-hidden"
             id="variables-inspector"
           >
             <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between">
@@ -429,7 +433,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             <div className="p-5 space-y-5">
               {variables.length === 0 ? (
                 <div className="text-center py-6 space-y-2">
-                  <div className="h-8 w-8 rounded-full bg-muted mx-auto flex items-center justify-center opacity-40">
+                  <div className="h-8 w-8 rounded-sm bg-muted mx-auto flex items-center justify-center opacity-40">
                     <GitFork className="h-4 w-4" />
                   </div>
                   <p className="text-[11px] text-muted-foreground italic">
@@ -473,7 +477,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
           {/* Identity Card */}
           <div
-            className="rounded-xl border bg-card p-5 space-y-4 shadow-sm"
+            className="rounded-sm border bg-card p-5 space-y-4 shadow-sm"
             id="meta-inspector"
           >
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -519,6 +523,26 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   </Badge>
                 </div>
               </div>
+
+              {prompt.tags && prompt.tags.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                    Tags
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 opacity-90">
+                    {prompt.tags.map(tag => (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="text-[10px] h-5 rounded hover:bg-muted font-mono border-transparent bg-muted/50"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="pt-2 border-t mt-4 space-y-2">
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-muted-foreground">Last Updated</span>
@@ -540,7 +564,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
           {/* Sign in prompt for anonymous users */}
           {!user && (
-            <div className="rounded-xl border border-dashed bg-card/30 p-5 text-center space-y-3">
+            <div className="rounded-sm border border-dashed bg-card/30 p-5 text-center space-y-3">
               <p className="text-xs text-muted-foreground">
                 Sign in to fork this prompt to your library
               </p>
