@@ -66,6 +66,7 @@ describe("FullscreenDialogContent", () => {
 
     expect(content).not.toBeNull();
     expect(content?.className).toContain("h-[var(--app-vh)]");
+    expect(content?.className).toContain("overflow-x-hidden");
 
     Object.defineProperty(window, "innerHeight", {
       configurable: true,
