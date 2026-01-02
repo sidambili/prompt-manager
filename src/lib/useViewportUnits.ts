@@ -5,7 +5,8 @@ import * as React from "react";
 type UseViewportUnitsResult = Readonly<Record<never, never>>;
 
 function setAppViewportHeight(): void {
-  const nextVh = `${window.innerHeight}px`;
+  const height = window.visualViewport?.height ?? window.innerHeight;
+  const nextVh = `${height}px`;
   document.documentElement.style.setProperty("--app-vh", nextVh);
 }
 
@@ -28,12 +29,23 @@ export function useViewportUnits(): UseViewportUnitsResult {
     window.addEventListener("resize", scheduleUpdate);
     window.addEventListener("orientationchange", scheduleUpdate);
 
+    const visualViewport = window.visualViewport;
+    if (visualViewport) {
+      visualViewport.addEventListener("resize", scheduleUpdate);
+      visualViewport.addEventListener("scroll", scheduleUpdate);
+    }
+
     return () => {
       if (rafId != null) {
         window.cancelAnimationFrame(rafId);
       }
       window.removeEventListener("resize", scheduleUpdate);
       window.removeEventListener("orientationchange", scheduleUpdate);
+
+      if (visualViewport) {
+        visualViewport.removeEventListener("resize", scheduleUpdate);
+        visualViewport.removeEventListener("scroll", scheduleUpdate);
+      }
     };
   }, []);
 

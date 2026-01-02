@@ -13,6 +13,7 @@ describe("useViewportUnits", () => {
   const originalInnerHeight = window.innerHeight;
   const originalRaf = window.requestAnimationFrame;
   const originalCaf = window.cancelAnimationFrame;
+  const originalVisualViewport = window.visualViewport;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -25,6 +26,11 @@ describe("useViewportUnits", () => {
     });
 
     document.documentElement.style.removeProperty("--app-vh");
+
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: undefined,
+    });
   });
 
   afterEach(() => {
@@ -38,6 +44,11 @@ describe("useViewportUnits", () => {
     Object.defineProperty(window, "innerHeight", {
       configurable: true,
       value: originalInnerHeight,
+    });
+
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: originalVisualViewport,
     });
   });
 
