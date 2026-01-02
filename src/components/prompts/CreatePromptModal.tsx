@@ -13,10 +13,10 @@ import { slugify, buildSlugId } from "@/lib/slug";
 import { PromptVariables } from "@/components/prompts/editor/PromptVariables";
 import {
     Dialog,
-    DialogContent,
     DialogDescription,
     DialogFooter,
     DialogHeader,
+    FullscreenDialogContent,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
@@ -192,11 +192,11 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent
-                className="!fixed !inset-0 !z-[100] flex flex-col !w-screen !h-screen !max-w-none !m-0 !border-none !rounded-none !p-0 !overflow-hidden bg-background !translate-x-0 !translate-y-0 !gap-0 !shadow-none"
-                id="create-prompt-dialog-content"
-            >
-                <DialogHeader className="px-8 py-6 border-b bg-muted/30" id="create-prompt-dialog-header">
+            <FullscreenDialogContent className="!z-[100]" id="create-prompt-dialog-content">
+                <DialogHeader
+                    className="px-8 py-6 border-b bg-muted/30 app-safe-area-pt"
+                    id="create-prompt-dialog-header"
+                >
                     <div className="flex items-start justify-between gap-3" id="create-prompt-header-row">
                         <div className="flex items-center gap-2" id="create-prompt-header-left">
                             <div
@@ -450,7 +450,10 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                             </div>
                         </div>
 
-                        <DialogFooter className="px-8 py-6 bg-muted/30 border-t" id="create-prompt-footer">
+                        <DialogFooter
+                            className="px-8 py-6 bg-muted/30 border-t app-safe-area-pb"
+                            id="create-prompt-footer"
+                        >
                             <div className="flex items-center justify-end gap-3 w-full" id="create-prompt-footer-row">
                                 <Button
                                     type="button"
@@ -476,7 +479,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                         </DialogFooter>
                     </form>
                 </Form>
-            </DialogContent>
+            </FullscreenDialogContent>
         </Dialog>
     );
 }

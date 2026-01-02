@@ -6,6 +6,21 @@ import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+function FullscreenDialogContent({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogContent>) {
+  return (
+    <DialogContent
+      className={cn(
+        "fixed inset-0 z-50 flex w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-none bg-background p-0 shadow-none h-[var(--app-vh)] app-safe-area-px app-safe-area-py",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -138,6 +153,7 @@ export {
   DialogHeader,
   DialogOverlay,
   DialogPortal,
+  FullscreenDialogContent,
   DialogTitle,
   DialogTrigger,
 }

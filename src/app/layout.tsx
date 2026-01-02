@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Geist_Mono } from "next/font/google";
 import AuthProvider from "@/components/layout/AuthProvider";
+import { ViewportUnitsInitializer } from "@/components/layout/ViewportUnitsInitializer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -36,6 +37,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <ViewportUnitsInitializer />
           <AuthProvider>{children}</AuthProvider>
           <Toaster position="top-right" />
         </ThemeProvider>

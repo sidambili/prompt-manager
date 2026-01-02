@@ -52,6 +52,7 @@
 
 :root {
   --radius: 0.625rem;
+  --app-vh: 100vh;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -136,5 +137,33 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .app-safe-area-pt {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .app-safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .app-safe-area-pl {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .app-safe-area-pr {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .app-safe-area-px {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .app-safe-area-py {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
