@@ -194,10 +194,10 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
             </DialogTrigger>
             <FullscreenDialogContent className="!z-[100]" id="create-prompt-dialog-content">
                 <DialogHeader
-                    className="px-4 py-4 sm:px-8 sm:py-6 border-b bg-muted/30 app-safe-area-pt"
+                    className="border-b bg-muted/30 app-safe-area-pt p-0 space-y-0"
                     id="create-prompt-dialog-header"
                 >
-                    <div className="flex items-start justify-between gap-3" id="create-prompt-header-row">
+                    <div className="flex items-start justify-between gap-3 px-4 py-5 sm:px-8 sm:py-6" id="create-prompt-header-row">
                         <div className="flex items-center gap-2" id="create-prompt-header-left">
                             <div
                                 className="h-8 w-8 rounded-md bg-brand/10 border border-brand/20 flex items-center justify-center"
@@ -463,10 +463,10 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                         </div>
 
                         <DialogFooter
-                            className="px-4 py-4 sm:px-8 sm:py-6 bg-muted/30 border-t app-safe-area-pb"
+                            className="bg-muted/30 border-t app-safe-area-pb items-center sm:items-center min-h-16 p-0"
                             id="create-prompt-footer"
                         >
-                            <div className="flex items-center justify-end gap-3 w-full" id="create-prompt-footer-row">
+                            <div className="flex items-center justify-end gap-3 w-full px-4 py-4 sm:px-8 sm:py-6" id="create-prompt-footer-row">
                                 <Button
                                     type="button"
                                     variant="outline"
