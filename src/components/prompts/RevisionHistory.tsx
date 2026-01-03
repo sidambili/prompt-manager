@@ -84,42 +84,40 @@ export function RevisionHistory({
                     )}
                     id={`revision-item-${revision.id}`}
                   >
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-bold font-mono text-brand bg-brand/5 px-1.5 py-0.5 rounded border border-brand/10">
-                            v{revisions.length - idx}
-                          </span>
-                          <span className="text-[11px] font-medium text-foreground truncate">
-                            {revision.title}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          {formatDistanceToNow(new Date(revision.created_at), { addSuffix: true })}
-                        </p>
+                    <div className="flex items-center justify-between gap-3 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-[10px] font-bold font-mono text-brand bg-brand/5 px-1 py-0.5 rounded border border-brand/10 shrink-0">
+                          v{revisions.length - idx}
+                        </span>
+                        <span className="text-[11px] font-medium text-foreground truncate">
+                          {revision.title}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground shrink-0 opacity-70">
+                          • {formatDistanceToNow(new Date(revision.created_at), { addSuffix: true })}
+                        </span>
                       </div>
 
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 hover:text-brand hover:bg-brand/10"
+                          className="h-6 w-6 hover:text-brand hover:bg-brand/10"
                           onClick={() => onViewRevision(revision)}
                           title="View snapshot"
                           id={`btn-view-revision-${revision.id}`}
                         >
-                          <Eye className="h-3.5 w-3.5" />
+                          <Eye className="h-3 w-3" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 hover:text-brand hover:bg-brand/10"
+                          className="h-6 w-6 hover:text-brand hover:bg-brand/10"
                           onClick={() => onRestoreRevision(revision)}
                           disabled={isRestoring}
                           title="Restore this version"
                           id={`btn-restore-revision-${revision.id}`}
                         >
-                          <RotateCcw className="h-3.5 w-3.5" />
+                          <RotateCcw className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
