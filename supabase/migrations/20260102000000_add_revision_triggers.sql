@@ -32,7 +32,7 @@ begin
 end;
 $$ language plpgsql;
 
--- Trigger for INSERT (Captures v0)
+-- Trigger for INSERT (Captures v1 - initial revision)
 create trigger trg_prompt_revision_insert
     after insert on public.prompts
     for each row

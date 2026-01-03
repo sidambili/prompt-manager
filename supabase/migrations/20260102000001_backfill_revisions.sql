@@ -1,5 +1,5 @@
 -- Backfill script to create initial revisions for prompts that have none
--- This ensures existing prompts (seed data) have at least a "v0" snapshot
+-- This ensures existing prompts (seed data) have at least a "v" snapshot
 
 do $$
 declare

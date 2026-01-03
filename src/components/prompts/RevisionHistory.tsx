@@ -77,7 +77,7 @@ export function RevisionHistory({
               <div className="flex justify-between items-start gap-4">
                 <div className="space-y-1 flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold font-mono text-muted-foreground">
+                    <span className="text-[11px] font-bold font-mono text-brand bg-brand/5 px-1.5 py-0.5 rounded border border-brand/10">
                       v{revisions.length - idx}
                     </span>
                     <span className="text-[11px] font-medium text-foreground truncate">
