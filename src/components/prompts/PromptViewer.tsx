@@ -306,7 +306,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
   return (
     <div
-      className="flex flex-col h-full bg-background selection:bg-brand-bg selection:text-brand"
+      className="flex flex-col bg-background selection:bg-brand-bg selection:text-brand"
       id="prompt-viewer-page"
     >
       {/* Toast */}
