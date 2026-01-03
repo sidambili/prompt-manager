@@ -100,7 +100,8 @@ async function verifyRLS() {
         content: 'Secret content',
         user_id: userA.id,
         subcategory_id: subcatId,
-        is_public: false
+        is_public: false,
+        slug: 'private-prompt-a'
     }).select().single()
 
     if (createError) {
@@ -148,6 +149,39 @@ async function verifyRLS() {
     } else {
         // No error returned, but maybe 0 rows updated (which is also protection)
         console.log('⚠️ User B update returned no error (likely 0 rows updated). Verified via title check above.')
+    }
+
+    console.log('9. User A updates Tags (Should SUCCEED)...')
+    const { error: tagErrorA } = await supabaseA.from('prompts').update({ tags: ['test', 'rls'] }).eq('id', promptA.id)
+    if (tagErrorA) {
+        console.error('❌ User A failed to update tags:', tagErrorA.message)
+    } else {
+        const { data: verTag } = await supabaseA.from('prompts').select('tags').eq('id', promptA.id).single()
+        if (JSON.stringify(verTag?.tags) === JSON.stringify(['test', 'rls'])) {
+            console.log('✅ User A updated tags.')
+        } else {
+            console.error('❌ User A update tags silently failed.')
+        }
+    }
+
+    console.log('10. User B tries to update Tags (Should FAIL)...')
+    const { error: tagErrorB } = await supabaseB.from('prompts').update({ tags: ['hacked'] }).eq('id', promptA.id)
+    const { data: verTagB } = await supabaseA.from('prompts').select('tags').eq('id', promptA.id).single()
+
+    if (JSON.stringify(verTagB?.tags) === JSON.stringify(['test', 'rls'])) {
+        console.log('✅ User B blocked from updating tags.')
+    } else {
+        console.error('❌ User B successfully updated tags to:', verTagB?.tags)
+    }
+
+    console.log('11. User B tries to update is_listed (Should FAIL)...')
+    const { error: listedErrorB } = await supabaseB.from('prompts').update({ is_listed: false }).eq('id', promptA.id)
+    const { data: verListed } = await supabaseA.from('prompts').select('is_listed').eq('id', promptA.id).single()
+
+    if (verListed?.is_listed === true) {
+        console.log('✅ User B blocked from updating is_listed.')
+    } else {
+        console.error('❌ User B successfully changed is_listed status.')
     }
 
     console.log('--- RLS Verification Complete ---')

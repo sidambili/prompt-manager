@@ -37,6 +37,10 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-bg: var(--brand-bg);
+  --color-brand-border: var(--brand-border);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -48,6 +52,7 @@
 
 :root {
   --radius: 0.625rem;
+  --app-vh: 100vh;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -79,6 +84,12 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Brand Colors Light */
+  --brand: oklch(0.65 0.15 160);
+  --brand-foreground: oklch(1 0 0);
+  --brand-bg: oklch(0.65 0.15 160 / 10%);
+  --brand-border: oklch(0.65 0.15 160 / 28%);
 }
 
 .dark {
@@ -112,6 +123,7 @@
   /* Custom functional tokens */
   --brand: oklch(0.78 0.15 160);
   /* #3ECF8E */
+  --brand-foreground: oklch(0.12 0.01 260);
   --brand-bg: oklch(0.78 0.15 160 / 10%);
   --brand-border: oklch(0.78 0.15 160 / 28%);
   --bg-code: oklch(0.1 0.01 260);
@@ -125,5 +137,33 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .app-safe-area-pt {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .app-safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .app-safe-area-pl {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .app-safe-area-pr {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .app-safe-area-px {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .app-safe-area-py {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }

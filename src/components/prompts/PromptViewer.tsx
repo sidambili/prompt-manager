@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,9 @@ import {
   Check,
   ArrowLeft,
   Home,
+  History,
+  RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/components/layout/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
@@ -23,6 +27,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { buildSlugId, slugify } from '@/lib/slug';
 import { cn } from '@/lib/utils';
+import { RevisionHistory, type Revision } from './RevisionHistory';
+import { MetadataHistory } from './MetadataHistory';
+import { type JsonValue, type PromptChangeEvent } from '@/lib/promptChangeEvents';
 
 interface Variable {
   key: string;
@@ -63,6 +70,31 @@ function fillTemplate(content: string, values: Record<string, string>): string {
   });
 }
 
+const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(
+  (): z.ZodType<JsonValue> =>
+    z.union([
+      z.string(),
+      z.number(),
+      z.boolean(),
+      z.null(),
+      z.array(jsonValueSchema),
+      z.record(z.string(), jsonValueSchema),
+    ])
+);
+
+const promptChangeEventSchema: z.ZodType<PromptChangeEvent> = z.object({
+  id: z.string(),
+  prompt_id: z.string(),
+  event_type: z.string(),
+  payload: z.object({
+    before: jsonValueSchema,
+    after: jsonValueSchema,
+  }),
+  batch_id: z.string().nullable(),
+  created_at: z.string(),
+  created_by: z.string(),
+});
+
 function PromptInline({
   content,
   values,
@@ -88,11 +120,10 @@ function PromptInline({
           return (
             <span
               key={idx}
-              className={`inline-flex items-center px-1.5 py-0.5 rounded ${
-                isFilled
-                  ? 'bg-primary/20 text-primary border border-primary/30'
-                  : 'bg-muted text-muted-foreground border border-border'
-              }`}
+              className={`inline-flex items-center px-1.5 py-0.5 rounded ${isFilled
+                ? 'bg-primary/20 text-primary border border-primary/30'
+                : 'bg-muted text-muted-foreground border border-border'
+                }`}
               id={`variable-chip-${idx}`}
             >
               {isFilled ? value : `{{${raw}}}`}
@@ -115,38 +146,116 @@ interface PromptViewerProps {
     subcategory_id: string;
     is_public: boolean;
     is_listed: boolean;
+    tags: string[];
     created_at: string;
     updated_at: string;
     user_id: string;
     subcategory:
-      | {
-          name: string;
-          categories: { name: string } | { name: string }[];
-        }
-      | {
-          name: string;
-          categories: { name: string } | { name: string }[];
-        }[];
+    | {
+      name: string;
+      category?: { name: string } | { name: string }[];
+      categories?: { name: string } | { name: string }[];
+    }
+    | {
+      name: string;
+      category?: { name: string } | { name: string }[];
+      categories?: { name: string } | { name: string }[];
+    }[];
   };
 }
 
 export default function PromptViewer({ prompt }: PromptViewerProps) {
   const { user } = useAuth();
   const [isForking, setIsForking] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [revisions, setRevisions] = useState<Revision[]>([]);
+  const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
+  const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
+  const [metadataEvents, setMetadataEvents] = useState<PromptChangeEvent[]>([]);
+  const [isLoadingMetadataEvents, setIsLoadingMetadataEvents] = useState(false);
+  // Optimistic state for immediate UI updates after restore
+  const [optimisticContent, setOptimisticContent] = useState<string | null>(null);
+  
   const supabase = createClient();
   const router = useRouter();
 
   const isOwner = user?.id === prompt.user_id;
 
+  const currentContent = optimisticContent || prompt.content;
+  const activeContent = selectedRevision ? selectedRevision.content : currentContent;
+
   const variables = useMemo(() => {
-    return extractVariables(prompt.content);
-  }, [prompt.content]);
+    return extractVariables(activeContent);
+  }, [activeContent]);
 
   const filledOutput = useMemo(() => {
-    return fillTemplate(prompt.content, values);
-  }, [prompt.content, values]);
+    return fillTemplate(activeContent, values);
+  }, [activeContent, values]);
+
+  // Reset optimistic state when prompt updates from server
+  useEffect(() => {
+    setOptimisticContent(null);
+  }, [prompt]);
+
+  useEffect(() => {
+    const fetchRevisions = async () => {
+      if (!isOwner) return;
+      setIsLoadingRevisions(true);
+
+      try {
+        const { data, error } = await supabase
+          .from('prompt_revisions')
+          .select('*')
+          .eq('prompt_id', prompt.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setRevisions(data ?? []);
+      } catch (error) {
+        console.error('Failed to fetch revisions:', error);
+        setRevisions([]);
+      } finally {
+        setIsLoadingRevisions(false);
+      }
+    };
+
+    fetchRevisions();
+  }, [prompt.id, isOwner, supabase]);
+
+  useEffect(() => {
+    const fetchMetadataEvents = async () => {
+      if (!isOwner) return;
+      setIsLoadingMetadataEvents(true);
+
+      try {
+        const { data, error } = await supabase
+          .from('prompt_change_events')
+          .select('*')
+          .eq('prompt_id', prompt.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const parsed = z.array(promptChangeEventSchema).safeParse(data);
+        if (!parsed.success) {
+          console.error('Invalid prompt_change_events payload', parsed.error);
+          setMetadataEvents([]);
+          return;
+        }
+
+        setMetadataEvents(parsed.data);
+      } catch (error) {
+        console.error('Failed to fetch metadata events:', error);
+        setMetadataEvents([]);
+      } finally {
+        setIsLoadingMetadataEvents(false);
+      }
+    };
+
+    fetchMetadataEvents();
+  }, [prompt.id, isOwner, supabase]);
 
   const missingCount = useMemo(() => {
     return variables.filter((v) => !values[v.key]?.trim()).length;
@@ -216,18 +325,61 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     }
   };
 
-  const canonicalUrl = `/prompts/${buildSlugId(prompt.slug, prompt.id)}`;
+  const handleRestoreRevision = async (revision: Revision) => {
+    if (!isOwner) return;
+    setIsRestoring(true);
+
+    try {
+      const { error } = await supabase
+        .from('prompts')
+        .update({
+          title: revision.title,
+          content: revision.content,
+          description: revision.description,
+          tags: revision.tags,
+        })
+        .eq('id', prompt.id);
+
+      if (error) throw error;
+
+      // Optimistic update
+      setOptimisticContent(revision.content);
+      showToast('Version restored successfully');
+      setSelectedRevision(null);
+      
+      // Refresh to get latest data (including new revision from trigger)
+      router.refresh();
+      
+      // Fetch updated revisions list to show the new restore point
+      const { data: newData } = await supabase
+        .from('prompt_revisions')
+        .select('*')
+        .eq('prompt_id', prompt.id)
+        .order('created_at', { ascending: false });
+      if (newData) setRevisions(newData);
+
+    } catch (error) {
+      console.error('Failed to restore revision:', error);
+      showToast('Restore failed');
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const canonicalUrl = `/dashboard/prompts/${buildSlugId(prompt.slug, prompt.id)}`;
   const editUrl = `${canonicalUrl}/edit`;
 
   const subcategory = Array.isArray(prompt.subcategory)
     ? prompt.subcategory[0]
     : prompt.subcategory;
-  const categoryData = subcategory?.categories;
+
+  // Handle nested aliased category
+  const categoryData = subcategory?.category || subcategory?.categories;
   const category = Array.isArray(categoryData) ? categoryData[0] : categoryData;
 
   return (
     <div
-      className="flex flex-col h-full bg-background selection:bg-brand-bg selection:text-brand"
+      className="flex flex-col bg-background selection:bg-brand-bg selection:text-brand"
       id="prompt-viewer-page"
     >
       {/* Toast */}
@@ -236,8 +388,8 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
           className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-2"
           id="global-toast"
         >
-          <div className="bg-popover border border-border shadow-2xl rounded-lg px-4 py-2.5 flex items-center gap-2.5">
-            <div className="h-4 w-4 rounded-full bg-brand/10 flex items-center justify-center">
+          <div className="bg-popover border border-border shadow-2xl rounded-sm px-4 py-2.5 flex items-center gap-2.5">
+            <div className="h-4 w-4 rounded-sm bg-brand/10 flex items-center justify-center">
               <Check className="h-3 w-3 text-brand" />
             </div>
             <span className="text-xs font-medium">{toastMessage}</span>
@@ -266,11 +418,18 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             <span>/</span>
             <span className="text-foreground">{subcategory?.name}</span>
           </div>
-          <h1
+            <h1
             className="text-2xl font-bold tracking-tight text-foreground"
             id="page-title"
           >
-            {prompt.title}
+            {selectedRevision ? (
+              <span className="flex items-center gap-2">
+                <Badge variant="outline" className="h-6 bg-brand/10 text-brand border-brand/20">Snapshot</Badge>
+                {selectedRevision.title}
+              </span>
+            ) : (
+              prompt.title
+            )}
           </h1>
           {prompt.description && (
             <p className="text-sm text-muted-foreground max-w-2xl">
@@ -280,15 +439,27 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         </div>
 
         <div className="flex items-center gap-2" id="primary-controls">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleCopy(prompt.content, 'Template')}
-            className="h-8 text-xs border-dashed gap-1.5"
-            id="btn-copy"
-          >
-            <Copy className="h-3.5 w-3.5 text-muted-foreground" /> Copy
-          </Button>
+          {selectedRevision ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedRevision(null)}
+              className="h-8 text-xs gap-1.5"
+              id="btn-exit-revision"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Back to Current
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleCopy(prompt.content, 'Template')}
+              className="h-8 text-xs border-dashed gap-1.5"
+              id="btn-copy"
+            >
+              <Copy className="h-3.5 w-3.5 text-muted-foreground" /> Copy
+            </Button>
+          )}
 
           {prompt.is_public && !isOwner && (
             <Button
@@ -305,16 +476,31 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
           )}
 
           {isOwner && (
-            <Button
-              size="sm"
-              asChild
-              className="h-8 bg-brand text-brand-foreground hover:bg-brand/90 transition-all text-xs font-semibold px-4"
-              id="btn-edit-mode"
-            >
-              <Link href={editUrl}>
-                <Edit2 className="h-3.5 w-3.5 mr-1.5" /> Edit
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              {selectedRevision && (
+                <Button
+                  size="sm"
+                  onClick={() => handleRestoreRevision(selectedRevision)}
+                  disabled={isRestoring}
+                  className="h-8 bg-brand text-brand-foreground hover:bg-brand/90 transition-all text-xs font-semibold px-4"
+                  id="btn-restore-this"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Restore Version
+                </Button>
+              )}
+              {!selectedRevision && (
+                <Button
+                  size="sm"
+                  asChild
+                  className="h-8 bg-brand text-brand-foreground hover:bg-brand/90 transition-all text-xs font-semibold px-4"
+                  id="btn-edit-mode"
+                >
+                  <Link href={editUrl}>
+                    <Edit2 className="h-3.5 w-3.5 mr-1.5" /> Edit
+                  </Link>
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -325,26 +511,23 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         <div className="lg:col-span-8 space-y-4" id="content-column">
           <Tabs defaultValue="source" className="w-full flex flex-col" id="content-tabs">
             <div className="flex items-center justify-between border-b mb-4">
-              <TabsList className="bg-transparent h-auto p-0 gap-8 justify-start">
+              <TabsList className="bg-transparent h-auto p-0 gap-2 justify-start">
                 <TabsTrigger
                   value="source"
-                  className="h-9 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
+                  className="h-9 px-5 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                   id="tab-source"
                 >
                   Template
                 </TabsTrigger>
                 <TabsTrigger
                   value="preview"
-                  className="h-9 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
+                  className="h-9 px-5 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                   id="tab-preview"
                 >
                   Output
                 </TabsTrigger>
               </TabsList>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-brand/5 border border-brand/10">
-                <div className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
-                <span className="text-[10px] text-brand-400 font-mono">LIVE_SYNC</span>
-              </div>
+
             </div>
 
             <TabsContent
@@ -352,12 +535,12 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               className="mt-0 ring-offset-background focus-visible:outline-none"
               id="pane-source"
             >
-              <ScrollArea
-                className="min-h-[500px] max-h-[700px] rounded-xl border bg-card/40 backdrop-blur-sm p-6"
-                id="source-view-scroll"
+              <div
+                className="rounded-sm border bg-card/40 backdrop-blur-sm p-6"
+                id="source-view-content"
               >
-                <PromptInline content={prompt.content} values={values} />
-              </ScrollArea>
+                <PromptInline content={activeContent} values={values} />
+              </div>
             </TabsContent>
 
             <TabsContent
@@ -365,9 +548,9 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               className="mt-0 ring-offset-background focus-visible:outline-none"
               id="pane-preview"
             >
-              <ScrollArea
-                className="min-h-[500px] max-h-[700px] rounded-xl border bg-muted/30 p-6"
-                id="preview-view-scroll"
+              <div
+                className="rounded-sm border bg-muted/30 p-6"
+                id="preview-view-content"
               >
                 <pre
                   className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/90"
@@ -379,8 +562,8 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                     </span>
                   )}
                 </pre>
-              </ScrollArea>
-              <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-lg p-3">
+              </div>
+              <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3">
                 <div className="text-[11px] text-muted-foreground">
                   Filled with{' '}
                   <span className="font-mono text-brand">
@@ -407,7 +590,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         <div className="lg:col-span-4 space-y-6" id="inspector-column">
           {/* Variables Inspector */}
           <div
-            className="rounded-xl border bg-card/50 shadow-sm overflow-hidden"
+            className="rounded-sm border bg-card/50 shadow-sm overflow-hidden"
             id="variables-inspector"
           >
             <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between">
@@ -429,7 +612,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             <div className="p-5 space-y-5">
               {variables.length === 0 ? (
                 <div className="text-center py-6 space-y-2">
-                  <div className="h-8 w-8 rounded-full bg-muted mx-auto flex items-center justify-center opacity-40">
+                  <div className="h-8 w-8 rounded-sm bg-muted mx-auto flex items-center justify-center opacity-40">
                     <GitFork className="h-4 w-4" />
                   </div>
                   <p className="text-[11px] text-muted-foreground italic">
@@ -473,7 +656,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
           {/* Identity Card */}
           <div
-            className="rounded-xl border bg-card p-5 space-y-4 shadow-sm"
+            className="rounded-sm border bg-card p-5 space-y-4 shadow-sm"
             id="meta-inspector"
           >
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -519,6 +702,26 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   </Badge>
                 </div>
               </div>
+
+              {prompt.tags && prompt.tags.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                    Tags
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 opacity-90">
+                    {prompt.tags.map(tag => (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="text-[10px] h-5 rounded hover:bg-muted font-mono border-transparent bg-muted/50"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="pt-2 border-t mt-4 space-y-2">
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-muted-foreground">Last Updated</span>
@@ -538,9 +741,47 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             </div>
           </div>
 
+          {/* Revision History Section (Owner Only) */}
+          {isOwner && (
+            <div
+              className="rounded-sm border bg-card/50 p-5 shadow-sm"
+              id="revisions-inspector"
+            >
+              {isLoadingRevisions ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <RevisionHistory
+                  revisions={revisions}
+                  currentRevisionId={selectedRevision?.id}
+                  onViewRevision={setSelectedRevision}
+                  onRestoreRevision={handleRestoreRevision}
+                  isRestoring={isRestoring}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Metadata History Section (Owner Only) */}
+          {isOwner && (
+            <div
+              className="rounded-sm border bg-card/50 p-5 shadow-sm"
+              id="metadata-history-inspector"
+            >
+              {isLoadingMetadataEvents ? (
+                <div className="flex items-center justify-center py-8" id="metadata-history-loading">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <MetadataHistory events={metadataEvents} />
+              )}
+            </div>
+          )}
+
           {/* Sign in prompt for anonymous users */}
           {!user && (
-            <div className="rounded-xl border border-dashed bg-card/30 p-5 text-center space-y-3">
+            <div className="rounded-sm border border-dashed bg-card/30 p-5 text-center space-y-3">
               <p className="text-xs text-muted-foreground">
                 Sign in to fork this prompt to your library
               </p>

@@ -31,7 +31,7 @@ export default function PublicPromptCard({ prompt }: PublicPromptCardProps) {
     return (
         <Link href={href} id={`public-prompt-card-link-${prompt.id}`}>
             <div
-                className="group flex items-center justify-between p-3 rounded-lg border bg-card/30 hover:bg-accent/40 hover:border-brand/40 transition-all cursor-pointer"
+                className="group flex items-center justify-between p-3 rounded-sm border bg-card/30 hover:bg-accent/40 hover:border-brand/40 transition-all cursor-pointer"
                 id={`public-prompt-card-${prompt.id}`}
             >
                 <div className="flex flex-1 items-center gap-4 min-w-0" id={`public-prompt-card-main-${prompt.id}`}>

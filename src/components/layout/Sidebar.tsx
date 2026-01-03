@@ -60,7 +60,7 @@ export default function Sidebar() {
     return (
         <aside className="z-40 flex w-[64px] flex-col border-r bg-card h-screen sticky top-0 shrink-0">
             <div className="flex h-[56px] items-center justify-center border-b">
-                <div className="h-8 w-8 rounded-lg bg-brand flex items-center justify-center text-primary-foreground font-bold">
+                <div className="h-8 w-8 rounded-sm bg-brand flex items-center justify-center text-primary-foreground font-bold">
                     P
                 </div>
             </div>
@@ -75,7 +75,7 @@ export default function Sidebar() {
                                 href={item.href}
                                 title={item.name}
                                 className={cn(
-                                    "relative group flex h-10 w-10 items-center justify-center rounded-lg transition-all",
+                                    "relative group flex h-10 w-10 items-center justify-center rounded-sm transition-all",
                                     isActive
                                         ? "bg-brand-bg text-brand"
                                         : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -99,7 +99,7 @@ export default function Sidebar() {
                     href="/dashboard/settings"
                     title="Settings"
                     className={cn(
-                        "relative group flex h-10 w-10 items-center justify-center rounded-lg transition-all text-muted-foreground hover:bg-accent hover:text-foreground",
+                        "relative group flex h-10 w-10 items-center justify-center rounded-sm transition-all text-muted-foreground hover:bg-accent hover:text-foreground",
                         pathname === "/dashboard/settings" && "bg-brand-bg text-brand"
                     )}
                 >
@@ -112,7 +112,7 @@ export default function Sidebar() {
                     href="/dashboard/trash"
                     title="Trash"
                     className={cn(
-                        "relative group flex h-10 w-10 items-center justify-center rounded-lg transition-all text-muted-foreground hover:bg-accent hover:text-foreground",
+                        "relative group flex h-10 w-10 items-center justify-center rounded-sm transition-all text-muted-foreground hover:bg-accent hover:text-foreground",
                         pathname === "/dashboard/trash" && "bg-brand-bg text-brand"
                     )}
                 >

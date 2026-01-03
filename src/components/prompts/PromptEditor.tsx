@@ -54,6 +54,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { slugify, buildSlugId } from '@/lib/slug';
 import { cn } from '@/lib/utils';
+import { normalizeVisibility } from '@/lib/visibility';
+
+import { PromptVariables } from './editor/PromptVariables';
+import { PromptSettings } from './editor/PromptSettings';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
@@ -62,6 +66,10 @@ const formSchema = z.object({
   subcategory_id: z.string().min(1, 'Category is required'),
   is_public: z.boolean().default(false),
   is_listed: z.boolean().default(true),
+  tags: z.array(z.string()).max(10, 'Max 10 tags').default([]),
+  commit_message: z
+    .string()
+    .max(200, 'Commit message is too long'),
 });
 
 type PromptEditorFormValues = z.input<typeof formSchema>;
@@ -120,6 +128,7 @@ type PromptEditorProps = {
     slug: string;
     is_public: boolean;
     is_listed: boolean;
+    tags: string[];
     subcategory_id: string;
     user_id?: string;
   };
@@ -144,12 +153,15 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       description: prompt.description || '',
       subcategory_id: prompt.subcategory_id,
       is_public: prompt.is_public,
-      is_listed: prompt.is_listed,
+      is_listed: prompt.is_public ? prompt.is_listed : false,
+      tags: prompt.tags || [],
+      commit_message: '',
     },
   });
 
   const watchedContent = form.watch('content');
   const watchedTitle = form.watch('title');
+  const watchedCommitMessage = form.watch('commit_message');
 
   const variables = useMemo(() => {
     return extractVariables(watchedContent);
@@ -162,6 +174,14 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
   const missingCount = useMemo(() => {
     return variables.filter((v) => !values[v.key]?.trim()).length;
   }, [variables, values]);
+
+  const watchedIsPublic = form.watch('is_public');
+
+  useEffect(() => {
+    if (!watchedIsPublic) {
+      form.setValue('is_listed', false, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [form, watchedIsPublic]);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -188,35 +208,31 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
     try {
       const parsedValues = formSchema.parse(formValues);
+      const normalizedVisibility = normalizeVisibility({
+        is_public: parsedValues.is_public,
+        is_listed: parsedValues.is_listed,
+      });
 
       const newSlug =
         parsedValues.title !== prompt.title ? slugify(parsedValues.title) : prompt.slug;
 
-      const { error } = await supabase
-        .from('prompts')
-        .update({
-          title: parsedValues.title,
-          content: parsedValues.content,
-          description: parsedValues.description,
-          subcategory_id: parsedValues.subcategory_id,
-          is_public: parsedValues.is_public,
-          is_listed: parsedValues.is_listed,
-          slug: newSlug,
-        })
-        .eq('id', prompt.id);
+      const { error } = await supabase.rpc('update_prompt_with_commit_message', {
+        p_prompt_id: prompt.id,
+        p_title: parsedValues.title,
+        p_content: parsedValues.content,
+        p_description: parsedValues.description,
+        p_subcategory_id: parsedValues.subcategory_id,
+        p_is_public: normalizedVisibility.is_public,
+        p_is_listed: normalizedVisibility.is_listed,
+        p_tags: parsedValues.tags,
+        p_slug: newSlug,
+        p_commit_message: parsedValues.commit_message,
+      });
 
       if (error) throw error;
 
-      await supabase.from('prompt_revisions').insert({
-        prompt_id: prompt.id,
-        title: parsedValues.title,
-        content: parsedValues.content,
-        description: parsedValues.description,
-        created_by: ownerId,
-      });
-
       showToast('Saved successfully');
-      router.push(`/prompts/${buildSlugId(newSlug, prompt.id)}`);
+      router.push(`/dashboard/prompts/${buildSlugId(newSlug, prompt.id)}`);
       router.refresh();
     } catch (error) {
       console.error('Failed to update prompt:', error);
@@ -242,7 +258,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
     }
   };
 
-  const canonicalUrl = `/prompts/${buildSlugId(prompt.slug, prompt.id)}`;
+  const canonicalUrl = `/dashboard/prompts/${buildSlugId(prompt.slug, prompt.id)}`;
 
   return (
     <div
@@ -255,8 +271,8 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
           className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-2"
           id="global-toast"
         >
-          <div className="bg-popover border border-border shadow-2xl rounded-lg px-4 py-2.5 flex items-center gap-2.5">
-            <div className="h-4 w-4 rounded-full bg-brand/10 flex items-center justify-center">
+          <div className="bg-popover border border-border shadow-2xl rounded-sm px-4 py-2.5 flex items-center gap-2.5">
+            <div className="h-4 w-4 rounded-sm bg-brand/10 flex items-center justify-center">
               <Check className="h-3 w-3 text-brand" />
             </div>
             <span className="text-xs font-medium">{toastMessage}</span>
@@ -386,21 +402,21 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                   <TabsList className="bg-transparent h-auto p-0 gap-8 justify-start">
                     <TabsTrigger
                       value="source"
-                      className="h-9 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
+                      className="h-9 px-0 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                       id="tab-source"
                     >
                       Template
                     </TabsTrigger>
                     <TabsTrigger
                       value="preview"
-                      className="h-9 px-0 rounded-none border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
+                      className="h-9 px-0 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                       id="tab-preview"
                     >
                       Output
                     </TabsTrigger>
                   </TabsList>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-brand/5 border border-brand/10">
-                    <div className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-brand/5 border border-brand/10">
+                    <div className="h-1.5 w-1.5 rounded-sm bg-brand animate-pulse" />
                     <span className="text-[10px] text-brand-400 font-mono">EDITING</span>
                   </div>
                 </div>
@@ -449,7 +465,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                       )}
                     </pre>
                   </ScrollArea>
-                  <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-lg p-3">
+                  <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3">
                     <div className="text-[11px] text-muted-foreground">
                       Filled with{' '}
                       <span className="font-mono text-brand">
@@ -464,227 +480,55 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
             {/* Inspector Column */}
             <div className="lg:col-span-4 space-y-6" id="inspector-column">
-              {/* Variables Inspector */}
-              <div
-                className="rounded-xl border bg-card/50 shadow-sm overflow-hidden"
-                id="variables-inspector"
-              >
-                <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                    Parameters
-                  </h3>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      'text-[10px] h-4 rounded-sm border-transparent',
-                      variables.length === 0
-                        ? 'bg-muted/50 text-muted-foreground'
-                        : missingCount === 0
-                          ? 'bg-brand/20 text-brand'
-                          : 'bg-orange/10 text-orange-400'
-                    )}
-                  >
-                    {variables.length === 0
-                      ? 'NONE'
-                      : missingCount === 0
-                        ? 'READY'
-                        : `${missingCount} MISSING`}
-                  </Badge>
+              <div className="rounded-sm border bg-card p-4 space-y-4" id="commit-message-section">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Revision Note</div>
+                  <div className="text-xs text-muted-foreground">
+                    Describe what changed in this version. (Optional)
+                  </div>
                 </div>
-                <div className="p-5 space-y-5">
-                  {variables.length === 0 ? (
-                    <div className="text-center py-6 space-y-2">
-                      <div className="h-8 w-8 rounded-full bg-muted mx-auto flex items-center justify-center opacity-40">
-                        <GitFork className="h-4 w-4" />
-                      </div>
-                      <p className="text-[11px] text-muted-foreground italic">
-                        No parameters detected
-                      </p>
-                      <p className="text-[10px] text-muted-foreground/60">
-                        Use {'{{variable}}'} syntax to add parameters
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {variables.map((variable, idx) => (
-                        <div
-                          key={variable.key}
-                          className="space-y-1.5 group"
-                          id={`param-group-${idx}`}
-                        >
-                          <div className="flex justify-between items-center px-0.5">
-                            <label
-                              htmlFor={`field-${variable.key}`}
-                              className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 group-focus-within:text-brand transition-colors"
-                            >
-                              {variable.raw}
-                            </label>
-                            {values[variable.key] && (
-                              <Check className="h-3 w-3 text-brand" />
-                            )}
-                          </div>
-                          <Input
-                            id={`field-${variable.key}`}
-                            value={values[variable.key] || ''}
-                            onChange={(e) =>
-                              setValues({ ...values, [variable.key]: e.target.value })
-                            }
-                            placeholder={`Set ${variable.raw}...`}
-                            className="h-8 text-[13px] font-mono bg-background/50 border-border/50 focus:border-brand focus:ring-0 transition-all"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Settings Card */}
-              <div
-                className="rounded-xl border bg-card p-5 space-y-4 shadow-sm"
-                id="settings-inspector"
-              >
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Settings
-                </h3>
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="subcategory_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-[10px] uppercase font-semibold text-muted-foreground">
-                          Category
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger
-                              disabled={isLoading}
-                              className="h-8 text-xs"
-                            >
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categories.map((cat) => (
-                              <div key={cat.id}>
-                                <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase bg-muted/30">
-                                  {cat.name}
-                                </div>
-                                {cat.subcategories.map((sub) => (
-                                  <SelectItem
-                                    key={sub.id}
-                                    value={sub.id}
-                                    className="text-xs"
-                                  >
-                                    {sub.name}
-                                  </SelectItem>
-                                ))}
-                              </div>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-[10px] uppercase font-semibold text-muted-foreground">
-                          Description
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Optional description..."
-                            className="resize-none text-xs min-h-[60px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Visibility Card */}
-              <div
-                className="rounded-xl border bg-card p-5 space-y-4 shadow-sm"
-                id="visibility-inspector"
-              >
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Visibility
-                </h3>
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="is_public"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border/50 p-3 bg-muted/10">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-xs font-medium flex items-center gap-1.5">
-                            {field.value ? (
-                              <Globe className="h-3 w-3 text-brand" />
-                            ) : (
-                              <Lock className="h-3 w-3" />
-                            )}
-                            {field.value ? 'Public' : 'Private'}
-                          </FormLabel>
-                          <div className="text-[10px] text-muted-foreground">
-                            {field.value
-                              ? 'Anyone can view this prompt'
-                              : 'Only you can view this prompt'}
-                          </div>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value ?? false}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="is_listed"
-                    render={({ field }) => (
-                      <FormItem
-                        className={cn(
-                          'flex flex-row items-center justify-between rounded-lg border border-border/50 p-3 bg-muted/10 transition-opacity',
-                          !form.watch('is_public') && 'opacity-50'
-                        )}
+                <FormField
+                  control={form.control}
+                  name="commit_message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          maxLength={200}
+                          placeholder="e.g. Added safety checks..."
+                          className="min-h-[90px] text-xs bg-muted/20 border-border/50 focus:border-brand transition-all resize-none"
+                          id="edit-commit-input"
+                        />
+                      </FormControl>
+                      <div
+                        className="text-[10px] text-muted-foreground text-right"
+                        id="edit-commit-counter"
                       >
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-xs font-medium">Listed</FormLabel>
-                          <div className="text-[10px] text-muted-foreground">
-                            Show in public listings & search
-                          </div>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value ?? true}
-                            onCheckedChange={field.onChange}
-                            disabled={!form.watch('is_public')}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                        {(watchedCommitMessage ?? '').length}/200
+                      </div>
+                      <FormMessage className="text-[10px]" />
+                    </FormItem>
+                  )}
+                />
               </div>
+
+              {/* Variables Inspector */}
+              <PromptVariables
+                variables={variables}
+                values={values}
+                onValueChange={(key, value) => setValues({ ...values, [key]: value })}
+                missingCount={missingCount}
+              />
+
+              <PromptSettings
+                categories={categories}
+                isLoading={isLoading}
+              />
             </div>
           </div>
         </form>
       </Form>
-    </div>
+    </div >
   );
 }

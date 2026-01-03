@@ -75,7 +75,7 @@ All auth settings are configured in the Supabase Dashboard, **not** `config.toml
 In **Authentication > URL Configuration**:
 
 -   **Site URL**: `https://your-production-domain.com`
--   **Redirect URLs**: Add `https://your-production-domain.com/**` (or specific paths like `/auth/callback`)
+-   **Redirect URLs**: Add `https://your-production-domain.com/**` (or specific paths `/auth/callback`)
 
 #### Email Confirmation
 
@@ -136,6 +136,7 @@ npm start
 | `NEXT_PUBLIC_ENABLE_OAUTH_GOOGLE` | `true` / `false`. Explicitly show/hide Google OAuth button.   |
 | `NEXT_PUBLIC_ENABLE_OAUTH_GITHUB` | `true` / `false`. Explicitly show/hide GitHub OAuth button.   |
 | `SUPABASE_SERVICE_ROLE_KEY`       | For server-side admin operations. **NEVER expose to client.** |
+| `DEPLOYMENT_MODE`                 | `cloud`, `self-hosted`, or `local`. Sets server-side behavior. |
 
 ---
 
