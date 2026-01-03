@@ -6,6 +6,12 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export interface Revision {
   id: string;
@@ -50,81 +56,88 @@ export function RevisionHistory({
   }
 
   return (
-    <div className="space-y-4" id="revisions-container">
-      <div className="flex items-center justify-between px-1">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-          <Clock className="h-3 w-3" />
-          Revision History
-        </h3>
-        <Badge variant="secondary" className="text-[10px] h-4 rounded-sm font-mono">
-          {revisions.length} {revisions.length === 1 ? 'version' : 'versions'}
-        </Badge>
-      </div>
+    <Accordion type="single" collapsible className="w-full" id="revisions-accordion">
+      <AccordionItem value="history" className="border-none">
+        <AccordionTrigger className="hover:no-underline py-0" id="revisions-trigger">
+          <div className="flex items-center justify-between w-full pr-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Clock className="h-3 w-3" />
+              Revision History
+            </h3>
+            <Badge variant="secondary" className="text-[10px] h-4 rounded-sm font-mono">
+              {revisions.length} {revisions.length === 1 ? 'version' : 'versions'}
+            </Badge>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="pt-4 pb-0" id="revisions-content">
+          <div className="space-y-4" id="revisions-container">
+            <ScrollArea className="h-[400px] -mx-1 px-1" id="revisions-scroll">
+              <div className="space-y-2">
+                {revisions.map((revision, idx) => (
+                  <div
+                    key={revision.id}
+                    className={cn(
+                      "group relative rounded-sm border p-3 transition-all hover:border-brand/40",
+                      currentRevisionId === revision.id
+                        ? "bg-brand/5 border-brand/30 ring-1 ring-brand/20"
+                        : "bg-card/50 border-border/50"
+                    )}
+                    id={`revision-item-${revision.id}`}
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold font-mono text-brand bg-brand/5 px-1.5 py-0.5 rounded border border-brand/10">
+                            v{revisions.length - idx}
+                          </span>
+                          <span className="text-[11px] font-medium text-foreground truncate">
+                            {revision.title}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          {formatDistanceToNow(new Date(revision.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
 
-      <ScrollArea className="h-[400px] -mx-1 px-1" id="revisions-scroll">
-        <div className="space-y-2">
-          {revisions.map((revision, idx) => (
-            <div
-              key={revision.id}
-              className={cn(
-                "group relative rounded-sm border p-3 transition-all hover:border-brand/40",
-                currentRevisionId === revision.id 
-                  ? "bg-brand/5 border-brand/30 ring-1 ring-brand/20" 
-                  : "bg-card/50 border-border/50"
-              )}
-              id={`revision-item-${revision.id}`}
-            >
-              <div className="flex justify-between items-start gap-4">
-                <div className="space-y-1 flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold font-mono text-brand bg-brand/5 px-1.5 py-0.5 rounded border border-brand/10">
-                      v{revisions.length - idx}
-                    </span>
-                    <span className="text-[11px] font-medium text-foreground truncate">
-                      {revision.title}
-                    </span>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hover:text-brand hover:bg-brand/10"
+                          onClick={() => onViewRevision(revision)}
+                          title="View snapshot"
+                          id={`btn-view-revision-${revision.id}`}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hover:text-brand hover:bg-brand/10"
+                          onClick={() => onRestoreRevision(revision)}
+                          disabled={isRestoring}
+                          title="Restore this version"
+                          id={`btn-restore-revision-${revision.id}`}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {currentRevisionId === revision.id && (
+                      <div className="absolute -left-px top-1/2 -translate-y-1/2 w-0.5 h-6 bg-brand rounded-r-full" />
+                    )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    {formatDistanceToNow(new Date(revision.created_at), { addSuffix: true })}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 hover:text-brand hover:bg-brand/10"
-                    onClick={() => onViewRevision(revision)}
-                    title="View snapshot"
-                    id={`btn-view-revision-${revision.id}`}
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 hover:text-brand hover:bg-brand/10"
-                    onClick={() => onRestoreRevision(revision)}
-                    disabled={isRestoring}
-                    title="Restore this version"
-                    id={`btn-restore-revision-${revision.id}`}
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                ))}
               </div>
-              
-              {currentRevisionId === revision.id && (
-                <div className="absolute -left-px top-1/2 -translate-y-1/2 w-0.5 h-6 bg-brand rounded-r-full" />
-              )}
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-      
-      <p className="text-[10px] text-muted-foreground text-center italic px-4">
-        Restoring a version will create a new revision from the selected snapshot.
-      </p>
-    </div>
+            </ScrollArea>
+
+            <p className="text-[10px] text-muted-foreground text-center italic px-4">
+              Restoring a version will create a new revision from the selected snapshot.
+            </p>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
