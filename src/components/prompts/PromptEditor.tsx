@@ -472,7 +472,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Revision Note</div>
                   <div className="text-xs text-muted-foreground">
-                    Describe what changed in this version.
+                    Describe what changed in this version. (Optional)
                   </div>
                 </div>
                 <FormField
@@ -481,11 +481,11 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input
+                        <Textarea
                           {...field}
                           maxLength={200}
                           placeholder="e.g. Added safety checks..."
-                          className="h-9 text-xs bg-muted/20 border-border/50 focus:border-brand transition-all"
+                          className="min-h-[90px] text-xs bg-muted/20 border-border/50 focus:border-brand transition-all resize-none"
                           id="edit-commit-input"
                         />
                       </FormControl>
