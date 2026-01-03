@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -145,12 +145,16 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
+  // Optimistic state for immediate UI updates after restore
+  const [optimisticContent, setOptimisticContent] = useState<string | null>(null);
+  
   const supabase = createClient();
   const router = useRouter();
 
   const isOwner = user?.id === prompt.user_id;
 
-  const activeContent = selectedRevision ? selectedRevision.content : prompt.content;
+  const currentContent = optimisticContent || prompt.content;
+  const activeContent = selectedRevision ? selectedRevision.content : currentContent;
 
   const variables = useMemo(() => {
     return extractVariables(activeContent);
@@ -159,6 +163,11 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
   const filledOutput = useMemo(() => {
     return fillTemplate(activeContent, values);
   }, [activeContent, values]);
+
+  // Reset optimistic state when prompt updates from server
+  useEffect(() => {
+    setOptimisticContent(null);
+  }, [prompt]);
 
   useMemo(() => {
     const fetchRevisions = async () => {
@@ -263,21 +272,15 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
       if (error) throw error;
 
-      // Create a new revision from the restored state
-      await supabase.from('prompt_revisions').insert({
-        prompt_id: prompt.id,
-        title: revision.title,
-        content: revision.content,
-        description: revision.description,
-        tags: revision.tags,
-        created_by: user!.id,
-      });
-
+      // Optimistic update
+      setOptimisticContent(revision.content);
       showToast('Version restored successfully');
       setSelectedRevision(null);
+      
+      // Refresh to get latest data (including new revision from trigger)
       router.refresh();
       
-      // Refresh revisions list
+      // Fetch updated revisions list to show the new restore point
       const { data: newData } = await supabase
         .from('prompt_revisions')
         .select('*')

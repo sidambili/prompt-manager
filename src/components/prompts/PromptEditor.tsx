@@ -214,15 +214,6 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
       if (error) throw error;
 
-      await supabase.from('prompt_revisions').insert({
-        prompt_id: prompt.id,
-        title: parsedValues.title,
-        content: parsedValues.content,
-        description: parsedValues.description,
-        tags: parsedValues.tags,
-        created_by: ownerId,
-      });
-
       showToast('Saved successfully');
       router.push(`/dashboard/prompts/${buildSlugId(newSlug, prompt.id)}`);
       router.refresh();
