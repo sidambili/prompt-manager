@@ -22,6 +22,7 @@ export interface Revision {
   tags: string[];
   created_at: string;
   created_by: string;
+  commit_message: string | null;
 }
 
 interface RevisionHistoryProps {
@@ -92,6 +93,11 @@ export function RevisionHistory({
                         <span className="text-[11px] font-medium text-foreground truncate">
                           {revision.title}
                         </span>
+                        {revision.commit_message && (
+                          <span className="text-[10px] text-muted-foreground truncate italic opacity-80">
+                            - {revision.commit_message}
+                          </span>
+                        )}
                         <span className="text-[9px] text-muted-foreground shrink-0 opacity-70">
                           • {formatDistanceToNow(new Date(revision.created_at), { addSuffix: true })}
                         </span>

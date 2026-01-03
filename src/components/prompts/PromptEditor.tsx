@@ -66,6 +66,10 @@ const formSchema = z.object({
   is_public: z.boolean().default(false),
   is_listed: z.boolean().default(true),
   tags: z.array(z.string()).max(10, 'Max 10 tags').default([]),
+  commit_message: z
+    .string()
+    .min(1, 'Commit message is required')
+    .max(200, 'Commit message is too long'),
 });
 
 type PromptEditorFormValues = z.input<typeof formSchema>;
@@ -151,11 +155,13 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       is_public: prompt.is_public,
       is_listed: prompt.is_listed,
       tags: prompt.tags || [],
+      commit_message: '',
     },
   });
 
   const watchedContent = form.watch('content');
   const watchedTitle = form.watch('title');
+  const watchedCommitMessage = form.watch('commit_message');
 
   const variables = useMemo(() => {
     return extractVariables(watchedContent);
@@ -198,19 +204,18 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       const newSlug =
         parsedValues.title !== prompt.title ? slugify(parsedValues.title) : prompt.slug;
 
-      const { error } = await supabase
-        .from('prompts')
-        .update({
-          title: parsedValues.title,
-          content: parsedValues.content,
-          description: parsedValues.description,
-          subcategory_id: parsedValues.subcategory_id,
-          is_public: parsedValues.is_public,
-          is_listed: parsedValues.is_listed,
-          tags: parsedValues.tags,
-          slug: newSlug,
-        })
-        .eq('id', prompt.id);
+      const { error } = await supabase.rpc('update_prompt_with_commit_message', {
+        p_prompt_id: prompt.id,
+        p_title: parsedValues.title,
+        p_content: parsedValues.content,
+        p_description: parsedValues.description,
+        p_subcategory_id: parsedValues.subcategory_id,
+        p_is_public: parsedValues.is_public,
+        p_is_listed: parsedValues.is_listed,
+        p_tags: parsedValues.tags,
+        p_slug: newSlug,
+        p_commit_message: parsedValues.commit_message,
+      });
 
       if (error) throw error;
 
@@ -476,8 +481,38 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                 isLoading={isLoading}
               />
 
-
-
+              <div className="rounded-sm border bg-card p-4 space-y-4" id="commit-message-section">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Revision Note</div>
+                  <div className="text-xs text-muted-foreground">
+                    Describe what changed in this version.
+                  </div>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="commit_message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          maxLength={200}
+                          placeholder="e.g. Added safety checks..."
+                          className="h-9 text-xs bg-muted/20 border-border/50 focus:border-brand transition-all"
+                          id="edit-commit-input"
+                        />
+                      </FormControl>
+                      <div
+                        className="text-[10px] text-muted-foreground text-right"
+                        id="edit-commit-counter"
+                      >
+                        {(watchedCommitMessage ?? '').length}/200
+                      </div>
+                      <FormMessage className="text-[10px]" />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </form>
