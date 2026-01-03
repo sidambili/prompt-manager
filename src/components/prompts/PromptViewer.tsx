@@ -16,6 +16,9 @@ import {
   Check,
   ArrowLeft,
   Home,
+  History,
+  RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/components/layout/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
@@ -23,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { buildSlugId, slugify } from '@/lib/slug';
 import { cn } from '@/lib/utils';
+import { RevisionHistory, type Revision } from './RevisionHistory';
 
 interface Variable {
   key: string;
@@ -135,20 +139,44 @@ interface PromptViewerProps {
 export default function PromptViewer({ prompt }: PromptViewerProps) {
   const { user } = useAuth();
   const [isForking, setIsForking] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [revisions, setRevisions] = useState<Revision[]>([]);
+  const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
+  const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
   const isOwner = user?.id === prompt.user_id;
 
+  const activeContent = selectedRevision ? selectedRevision.content : prompt.content;
+
   const variables = useMemo(() => {
-    return extractVariables(prompt.content);
-  }, [prompt.content]);
+    return extractVariables(activeContent);
+  }, [activeContent]);
 
   const filledOutput = useMemo(() => {
-    return fillTemplate(prompt.content, values);
-  }, [prompt.content, values]);
+    return fillTemplate(activeContent, values);
+  }, [activeContent, values]);
+
+  useMemo(() => {
+    const fetchRevisions = async () => {
+      if (!isOwner) return;
+      setIsLoadingRevisions(true);
+      const { data, error } = await supabase
+        .from('prompt_revisions')
+        .select('*')
+        .eq('prompt_id', prompt.id)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        setRevisions(data);
+      }
+      setIsLoadingRevisions(false);
+    };
+    fetchRevisions();
+  }, [prompt.id, isOwner, supabase]);
 
   const missingCount = useMemo(() => {
     return variables.filter((v) => !values[v.key]?.trim()).length;
@@ -218,6 +246,53 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     }
   };
 
+  const handleRestoreRevision = async (revision: Revision) => {
+    if (!isOwner) return;
+    setIsRestoring(true);
+
+    try {
+      const { error } = await supabase
+        .from('prompts')
+        .update({
+          title: revision.title,
+          content: revision.content,
+          description: revision.description,
+          tags: revision.tags,
+        })
+        .eq('id', prompt.id);
+
+      if (error) throw error;
+
+      // Create a new revision from the restored state
+      await supabase.from('prompt_revisions').insert({
+        prompt_id: prompt.id,
+        title: revision.title,
+        content: revision.content,
+        description: revision.description,
+        tags: revision.tags,
+        created_by: user!.id,
+      });
+
+      showToast('Version restored successfully');
+      setSelectedRevision(null);
+      router.refresh();
+      
+      // Refresh revisions list
+      const { data: newData } = await supabase
+        .from('prompt_revisions')
+        .select('*')
+        .eq('prompt_id', prompt.id)
+        .order('created_at', { ascending: false });
+      if (newData) setRevisions(newData);
+
+    } catch (error) {
+      console.error('Failed to restore revision:', error);
+      showToast('Restore failed');
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   const canonicalUrl = `/dashboard/prompts/${buildSlugId(prompt.slug, prompt.id)}`;
   const editUrl = `${canonicalUrl}/edit`;
 
@@ -270,11 +345,18 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             <span>/</span>
             <span className="text-foreground">{subcategory?.name}</span>
           </div>
-          <h1
+            <h1
             className="text-2xl font-bold tracking-tight text-foreground"
             id="page-title"
           >
-            {prompt.title}
+            {selectedRevision ? (
+              <span className="flex items-center gap-2">
+                <Badge variant="outline" className="h-6 bg-brand/10 text-brand border-brand/20">Snapshot</Badge>
+                {selectedRevision.title}
+              </span>
+            ) : (
+              prompt.title
+            )}
           </h1>
           {prompt.description && (
             <p className="text-sm text-muted-foreground max-w-2xl">
@@ -284,15 +366,27 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         </div>
 
         <div className="flex items-center gap-2" id="primary-controls">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleCopy(prompt.content, 'Template')}
-            className="h-8 text-xs border-dashed gap-1.5"
-            id="btn-copy"
-          >
-            <Copy className="h-3.5 w-3.5 text-muted-foreground" /> Copy
-          </Button>
+          {selectedRevision ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedRevision(null)}
+              className="h-8 text-xs gap-1.5"
+              id="btn-exit-revision"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Back to Current
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleCopy(prompt.content, 'Template')}
+              className="h-8 text-xs border-dashed gap-1.5"
+              id="btn-copy"
+            >
+              <Copy className="h-3.5 w-3.5 text-muted-foreground" /> Copy
+            </Button>
+          )}
 
           {prompt.is_public && !isOwner && (
             <Button
@@ -309,16 +403,31 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
           )}
 
           {isOwner && (
-            <Button
-              size="sm"
-              asChild
-              className="h-8 bg-brand text-brand-foreground hover:bg-brand/90 transition-all text-xs font-semibold px-4"
-              id="btn-edit-mode"
-            >
-              <Link href={editUrl}>
-                <Edit2 className="h-3.5 w-3.5 mr-1.5" /> Edit
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              {selectedRevision && (
+                <Button
+                  size="sm"
+                  onClick={() => handleRestoreRevision(selectedRevision)}
+                  disabled={isRestoring}
+                  className="h-8 bg-brand text-brand-foreground hover:bg-brand/90 transition-all text-xs font-semibold px-4"
+                  id="btn-restore-this"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Restore Version
+                </Button>
+              )}
+              {!selectedRevision && (
+                <Button
+                  size="sm"
+                  asChild
+                  className="h-8 bg-brand text-brand-foreground hover:bg-brand/90 transition-all text-xs font-semibold px-4"
+                  id="btn-edit-mode"
+                >
+                  <Link href={editUrl}>
+                    <Edit2 className="h-3.5 w-3.5 mr-1.5" /> Edit
+                  </Link>
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -558,6 +667,28 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               </div>
             </div>
           </div>
+
+          {/* Revision History Section (Owner Only) */}
+          {isOwner && (
+            <div
+              className="rounded-sm border bg-card/50 p-5 shadow-sm"
+              id="revisions-inspector"
+            >
+              {isLoadingRevisions ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <RevisionHistory
+                  revisions={revisions}
+                  currentRevisionId={selectedRevision?.id}
+                  onViewRevision={setSelectedRevision}
+                  onRestoreRevision={handleRestoreRevision}
+                  isRestoring={isRestoring}
+                />
+              )}
+            </div>
+          )}
 
           {/* Sign in prompt for anonymous users */}
           {!user && (
