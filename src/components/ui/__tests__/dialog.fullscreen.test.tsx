@@ -4,6 +4,7 @@ import { render, act } from "@testing-library/react";
 
 import { Dialog, FullscreenDialogContent } from "@/components/ui/dialog";
 import { useViewportUnits } from "@/lib/useViewportUnits";
+import { DialogTitle } from "@radix-ui/react-dialog";
 
 function Harness() {
   useViewportUnits();
@@ -11,6 +12,7 @@ function Harness() {
   return (
     <Dialog open>
       <FullscreenDialogContent id="fullscreen-dialog-content-test">
+        <DialogTitle>Test Dialog</DialogTitle>
         <div id="fullscreen-dialog-child">Hello</div>
       </FullscreenDialogContent>
     </Dialog>
@@ -60,7 +62,7 @@ describe("FullscreenDialogContent", () => {
       "700px"
     );
 
-    const content = container.querySelector(
+    const content = document.querySelector(
       "#fullscreen-dialog-content-test"
     ) as HTMLElement | null;
 
