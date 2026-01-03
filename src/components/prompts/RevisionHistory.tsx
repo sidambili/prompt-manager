@@ -42,7 +42,7 @@ export function RevisionHistory({
   if (revisions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-3" id="revisions-empty">
-        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center opacity-50">
+        <div className="h-10 w-10 rounded-sm bg-muted flex items-center justify-center opacity-50">
           <History className="h-5 w-5" />
         </div>
         <div className="space-y-1">
@@ -64,7 +64,7 @@ export function RevisionHistory({
               <Clock className="h-3 w-3" />
               Revision History
             </h3>
-            <Badge variant="secondary" className="text-[10px] h-4 rounded-sm font-mono">
+            <Badge variant="secondary" className="text-[0.7rem] h-4 rounded-sm font-mono py-3">
               {revisions.length} {revisions.length === 1 ? 'version' : 'versions'}
             </Badge>
           </div>
