@@ -68,7 +68,6 @@ const formSchema = z.object({
   tags: z.array(z.string()).max(10, 'Max 10 tags').default([]),
   commit_message: z
     .string()
-    .min(1, 'Commit message is required')
     .max(200, 'Commit message is too long'),
 });
 
