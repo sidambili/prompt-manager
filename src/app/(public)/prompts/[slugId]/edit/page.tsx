@@ -36,6 +36,7 @@ export default async function EditPromptPage({ params }: Props) {
       slug,
       is_public,
       is_listed,
+      tags,
       subcategory_id,
       user_id
     `)

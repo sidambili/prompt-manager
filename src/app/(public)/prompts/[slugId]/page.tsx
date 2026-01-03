@@ -65,6 +65,7 @@ export default async function PromptPage({ params }: Props) {
       subcategory_id,
       is_public,
       is_listed,
+      tags,
       created_at,
       updated_at,
       user_id,
