@@ -54,6 +54,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { slugify, buildSlugId } from '@/lib/slug';
 import { cn } from '@/lib/utils';
+import { normalizeVisibility } from '@/lib/visibility';
 
 import { PromptVariables } from './editor/PromptVariables';
 import { PromptSettings } from './editor/PromptSettings';
@@ -152,7 +153,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       description: prompt.description || '',
       subcategory_id: prompt.subcategory_id,
       is_public: prompt.is_public,
-      is_listed: prompt.is_listed,
+      is_listed: prompt.is_public ? prompt.is_listed : false,
       tags: prompt.tags || [],
       commit_message: '',
     },
@@ -173,6 +174,14 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
   const missingCount = useMemo(() => {
     return variables.filter((v) => !values[v.key]?.trim()).length;
   }, [variables, values]);
+
+  const watchedIsPublic = form.watch('is_public');
+
+  useEffect(() => {
+    if (!watchedIsPublic) {
+      form.setValue('is_listed', false, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [form, watchedIsPublic]);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -199,6 +208,10 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
     try {
       const parsedValues = formSchema.parse(formValues);
+      const normalizedVisibility = normalizeVisibility({
+        is_public: parsedValues.is_public,
+        is_listed: parsedValues.is_listed,
+      });
 
       const newSlug =
         parsedValues.title !== prompt.title ? slugify(parsedValues.title) : prompt.slug;
@@ -209,8 +222,8 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
         p_content: parsedValues.content,
         p_description: parsedValues.description,
         p_subcategory_id: parsedValues.subcategory_id,
-        p_is_public: parsedValues.is_public,
-        p_is_listed: parsedValues.is_listed,
+        p_is_public: normalizedVisibility.is_public,
+        p_is_listed: normalizedVisibility.is_listed,
         p_tags: parsedValues.tags,
         p_slug: newSlug,
         p_commit_message: parsedValues.commit_message,

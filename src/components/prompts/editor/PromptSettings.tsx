@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { TagsInput } from "@/components/ui/tags-input";
 import { cn } from "@/lib/utils";
+import { normalizeVisibility } from "@/lib/visibility";
 
 interface Category {
     id: string;
@@ -139,14 +140,27 @@ export function PromptSettings({ categories, isLoading }: PromptSettingsProps) {
                                     </FormLabel>
                                     <div className="text-[10px] text-muted-foreground">
                                         {field.value
-                                            ? "Anyone can view this prompt"
+                                            ? "Viewable without login"
                                             : "Only you can view this prompt"}
                                     </div>
                                 </div>
                                 <FormControl>
                                     <Switch
                                         checked={field.value ?? false}
-                                        onCheckedChange={field.onChange}
+                                        onCheckedChange={(checked) => {
+                                            const normalized = normalizeVisibility({
+                                                is_public: checked,
+                                                is_listed: Boolean(form.getValues("is_listed")),
+                                            });
+
+                                            field.onChange(normalized.is_public);
+                                            if (!normalized.is_public) {
+                                                form.setValue("is_listed", false, {
+                                                    shouldDirty: true,
+                                                    shouldValidate: true,
+                                                });
+                                            }
+                                        }}
                                     />
                                 </FormControl>
                             </FormItem>
@@ -166,12 +180,12 @@ export function PromptSettings({ categories, isLoading }: PromptSettingsProps) {
                                 <div className="space-y-0.5">
                                     <FormLabel className="text-xs font-medium">Listed</FormLabel>
                                     <div className="text-[10px] text-muted-foreground">
-                                        Show in public listings & search
+                                        Shown publicly and eligible for Google indexing
                                     </div>
                                 </div>
                                 <FormControl>
                                     <Switch
-                                        checked={field.value ?? true}
+                                        checked={field.value ?? false}
                                         onCheckedChange={field.onChange}
                                         disabled={!form.watch("is_public")}
                                     />

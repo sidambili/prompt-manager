@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { TagsInput } from "@/components/ui/tags-input";
 import { cn } from "@/lib/utils";
+import { normalizeVisibility } from "@/lib/visibility";
 
 const formSchema = z.object({
     title: z.string().min(1, "Title is required").max(100, "Title is too long"),
@@ -48,7 +49,7 @@ const formSchema = z.object({
     description: z.string().max(500, "Description is too long").default(""),
     subcategory_id: z.string().min(1, "Category is required"),
     is_public: z.boolean().default(false),
-    is_listed: z.boolean().default(true),
+    is_listed: z.boolean().default(false),
     tags: z.array(z.string()).max(10, "Max 10 tags allowed").default([]),
 });
 
@@ -109,7 +110,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
             description: "",
             subcategory_id: "",
             is_public: false,
-            is_listed: true,
+            is_listed: false,
             tags: [],
         },
     });
@@ -124,6 +125,12 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
     const missingCount = useMemo(() => {
         return variables.filter((v) => !values[v.key]?.trim()).length;
     }, [variables, values]);
+
+    useEffect(() => {
+        if (!isPublic) {
+            form.setValue("is_listed", false, { shouldDirty: true, shouldValidate: true });
+        }
+    }, [form, isPublic]);
 
     useEffect(() => {
         if (open) {
@@ -145,6 +152,10 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
         setIsLoading(true);
 
         const parsedValues = formSchema.parse(values);
+        const normalizedVisibility = normalizeVisibility({
+            is_public: parsedValues.is_public,
+            is_listed: parsedValues.is_listed,
+        });
 
         try {
             const slug = slugify(parsedValues.title);
@@ -156,8 +167,8 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                     content: parsedValues.content,
                     description: parsedValues.description,
                     subcategory_id: parsedValues.subcategory_id,
-                    is_public: parsedValues.is_public,
-                    is_listed: parsedValues.is_listed,
+                    is_public: normalizedVisibility.is_public,
+                    is_listed: normalizedVisibility.is_listed,
                     tags: parsedValues.tags,
                     slug,
                 })
@@ -338,13 +349,21 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                                                 Public
                                                             </FormLabel>
                                                             <div className="text-xs text-muted-foreground" id="create-prompt-public-hint">
-                                                                Anyone with the link can view this prompt.
+                                                                Viewable without login.
                                                             </div>
                                                         </div>
                                                         <FormControl>
                                                             <Switch
                                                                 checked={field.value ?? false}
-                                                                onCheckedChange={field.onChange}
+                                                                onCheckedChange={(checked) => {
+                                                                    field.onChange(checked);
+                                                                    if (!checked) {
+                                                                        form.setValue("is_listed", false, {
+                                                                            shouldDirty: true,
+                                                                            shouldValidate: true,
+                                                                        });
+                                                                    }
+                                                                }}
                                                                 className="origin-right"
                                                                 id="create-prompt-public-switch"
                                                             />
@@ -367,12 +386,12 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                                         <div className="space-y-1" id="create-prompt-listed-copy">
                                                             <FormLabel className="text-sm font-medium" id="create-prompt-listed-label">Listed</FormLabel>
                                                             <div className="text-xs text-muted-foreground" id="create-prompt-listed-hint">
-                                                                Show in public directories and search.
+                                                                Shown publicly and eligible for Google indexing.
                                                             </div>
                                                         </div>
                                                         <FormControl>
                                                             <Switch
-                                                                checked={field.value ?? true}
+                                                                checked={field.value ?? false}
                                                                 onCheckedChange={field.onChange}
                                                                 disabled={!isPublic}
                                                                 className="origin-right"
