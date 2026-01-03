@@ -1,10 +1,15 @@
 'use client';
 
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { History, RotateCcw, Eye, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card';
 import { cn } from '@/lib/utils';
 import {
   Accordion,
@@ -40,6 +45,17 @@ export function RevisionHistory({
   onRestoreRevision,
   isRestoring = false,
 }: RevisionHistoryProps) {
+  const truncateCommitMessage = (message: string): string => {
+    const trimmed = message.trim();
+    if (trimmed.length <= 15) return trimmed;
+    return `${trimmed.slice(0, 15)}…`;
+  };
+
+  const formatAuthor = (authorId: string): string => {
+    if (authorId.length <= 12) return authorId;
+    return `${authorId.slice(0, 8)}…${authorId.slice(-4)}`;
+  };
+
   if (revisions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-3" id="revisions-empty">
@@ -75,6 +91,18 @@ export function RevisionHistory({
             <ScrollArea className="h-[400px] -mx-1 px-1" id="revisions-scroll">
               <div className="space-y-2">
                 {revisions.map((revision, idx) => (
+                  (() => {
+                    const versionNumber = revisions.length - idx;
+                    const commitMessage = revision.commit_message?.trim() ?? '';
+                    const showMessage = commitMessage.length > 0 ? commitMessage : '(no message)';
+                    const truncatedMessage = truncateCommitMessage(showMessage);
+                    const authorLabel = formatAuthor(revision.created_by);
+                    const whenLabel = formatDistanceToNow(new Date(revision.created_at), {
+                      addSuffix: true,
+                    });
+                    const timestampLabel = format(new Date(revision.created_at), 'PPpp');
+
+                    return (
                   <div
                     key={revision.id}
                     className={cn(
@@ -88,18 +116,77 @@ export function RevisionHistory({
                     <div className="flex items-center justify-between gap-3 min-w-0">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <span className="text-[10px] font-bold font-mono text-brand bg-brand/5 px-1 py-0.5 rounded border border-brand/10 shrink-0">
-                          v{revisions.length - idx}
+                          v{versionNumber}
                         </span>
                         <span className="text-[11px] font-medium text-foreground truncate">
                           {revision.title}
                         </span>
-                        {revision.commit_message && (
-                          <span className="text-[10px] text-muted-foreground truncate italic opacity-80">
-                            - {revision.commit_message}
-                          </span>
-                        )}
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <span
+                              className="text-[10px] text-muted-foreground truncate italic opacity-80 cursor-default"
+                              id={`revision-commit-trigger-${revision.id}`}
+                            >
+                              - {truncatedMessage}
+                            </span>
+                          </HoverCardTrigger>
+                          <HoverCardContent
+                            className="w-[360px] p-3 bg-card border-border"
+                            side="right"
+                            align="start"
+                            id={`revision-commit-hover-${revision.id}`}
+                          >
+                            <div className="space-y-2" id={`revision-hover-inner-${revision.id}`}
+                            >
+                              <div
+                                className="flex items-start justify-between gap-3"
+                                id={`revision-hover-top-${revision.id}`}
+                              >
+                                <div className="min-w-0" id={`revision-hover-author-${revision.id}`}>
+                                  <div className="text-[11px] font-medium text-foreground truncate">
+                                    {authorLabel}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    {whenLabel}
+                                  </div>
+                                </div>
+                                <div
+                                  className="text-[10px] text-muted-foreground font-mono whitespace-nowrap"
+                                  id={`revision-hover-timestamp-${revision.id}`}
+                                >
+                                  {timestampLabel}
+                                </div>
+                              </div>
+
+                              <div
+                                className="rounded-sm border bg-muted/20 px-2 py-1.5"
+                                id={`revision-hover-message-wrap-${revision.id}`}
+                              >
+                                <div
+                                  className="text-[11px] text-foreground whitespace-pre-wrap break-words"
+                                  id={`revision-hover-message-${revision.id}`}
+                                >
+                                  {showMessage}
+                                </div>
+                              </div>
+
+                              <div
+                                className="flex items-center justify-between text-[10px] text-muted-foreground font-mono"
+                                id={`revision-hover-bottom-${revision.id}`}
+                              >
+                                <div id={`revision-hover-version-${revision.id}`}>v{versionNumber}</div>
+                                <div
+                                  className="truncate max-w-[220px]"
+                                  id={`revision-hover-id-${revision.id}`}
+                                >
+                                  {revision.id}
+                                </div>
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
                         <span className="text-[9px] text-muted-foreground shrink-0 opacity-70">
-                          • {formatDistanceToNow(new Date(revision.created_at), { addSuffix: true })}
+                          • {whenLabel}
                         </span>
                       </div>
 
@@ -132,6 +219,8 @@ export function RevisionHistory({
                       <div className="absolute -left-px top-1/2 -translate-y-1/2 w-0.5 h-6 bg-brand rounded-r-full" />
                     )}
                   </div>
+                    );
+                  })()
                 ))}
               </div>
             </ScrollArea>

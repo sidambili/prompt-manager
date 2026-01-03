@@ -468,19 +468,6 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
             {/* Inspector Column */}
             <div className="lg:col-span-4 space-y-6" id="inspector-column">
-              {/* Variables Inspector */}
-              <PromptVariables
-                variables={variables}
-                values={values}
-                onValueChange={(key, value) => setValues({ ...values, [key]: value })}
-                missingCount={missingCount}
-              />
-
-              <PromptSettings
-                categories={categories}
-                isLoading={isLoading}
-              />
-
               <div className="rounded-sm border bg-card p-4 space-y-4" id="commit-message-section">
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Revision Note</div>
@@ -513,6 +500,19 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                   )}
                 />
               </div>
+
+              {/* Variables Inspector */}
+              <PromptVariables
+                variables={variables}
+                values={values}
+                onValueChange={(key, value) => setValues({ ...values, [key]: value })}
+                missingCount={missingCount}
+              />
+
+              <PromptSettings
+                categories={categories}
+                isLoading={isLoading}
+              />
             </div>
           </div>
         </form>
