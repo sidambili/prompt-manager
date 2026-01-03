@@ -23,7 +23,7 @@ An open-source, self-hostable prompt management platform for automation engineer
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-org/prompt-manager.git
+git clone https://github.com/sidambili/prompt-manager.git
 cd prompt-manager
 ```
 
