@@ -224,7 +224,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       });
 
       showToast('Saved successfully');
-      router.push(`/prompts/${buildSlugId(newSlug, prompt.id)}`);
+      router.push(`/dashboard/prompts/${buildSlugId(newSlug, prompt.id)}`);
       router.refresh();
     } catch (error) {
       console.error('Failed to update prompt:', error);
