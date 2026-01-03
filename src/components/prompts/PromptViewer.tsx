@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,8 @@ import Link from 'next/link';
 import { buildSlugId, slugify } from '@/lib/slug';
 import { cn } from '@/lib/utils';
 import { RevisionHistory, type Revision } from './RevisionHistory';
+import { MetadataHistory } from './MetadataHistory';
+import { type JsonValue, type PromptChangeEvent } from '@/lib/promptChangeEvents';
 
 interface Variable {
   key: string;
@@ -66,6 +69,31 @@ function fillTemplate(content: string, values: Record<string, string>): string {
     return value ? value : match;
   });
 }
+
+const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(
+  (): z.ZodType<JsonValue> =>
+    z.union([
+      z.string(),
+      z.number(),
+      z.boolean(),
+      z.null(),
+      z.array(jsonValueSchema),
+      z.record(z.string(), jsonValueSchema),
+    ])
+);
+
+const promptChangeEventSchema: z.ZodType<PromptChangeEvent> = z.object({
+  id: z.string(),
+  prompt_id: z.string(),
+  event_type: z.string(),
+  payload: z.object({
+    before: jsonValueSchema,
+    after: jsonValueSchema,
+  }),
+  batch_id: z.string().nullable(),
+  created_at: z.string(),
+  created_by: z.string(),
+});
 
 function PromptInline({
   content,
@@ -145,6 +173,8 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
+  const [metadataEvents, setMetadataEvents] = useState<PromptChangeEvent[]>([]);
+  const [isLoadingMetadataEvents, setIsLoadingMetadataEvents] = useState(false);
   // Optimistic state for immediate UI updates after restore
   const [optimisticContent, setOptimisticContent] = useState<string | null>(null);
   
@@ -169,22 +199,62 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     setOptimisticContent(null);
   }, [prompt]);
 
-  useMemo(() => {
+  useEffect(() => {
     const fetchRevisions = async () => {
       if (!isOwner) return;
       setIsLoadingRevisions(true);
-      const { data, error } = await supabase
-        .from('prompt_revisions')
-        .select('*')
-        .eq('prompt_id', prompt.id)
-        .order('created_at', { ascending: false });
 
-      if (data) {
-        setRevisions(data);
+      try {
+        const { data, error } = await supabase
+          .from('prompt_revisions')
+          .select('*')
+          .eq('prompt_id', prompt.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setRevisions(data ?? []);
+      } catch (error) {
+        console.error('Failed to fetch revisions:', error);
+        setRevisions([]);
+      } finally {
+        setIsLoadingRevisions(false);
       }
-      setIsLoadingRevisions(false);
     };
+
     fetchRevisions();
+  }, [prompt.id, isOwner, supabase]);
+
+  useEffect(() => {
+    const fetchMetadataEvents = async () => {
+      if (!isOwner) return;
+      setIsLoadingMetadataEvents(true);
+
+      try {
+        const { data, error } = await supabase
+          .from('prompt_change_events')
+          .select('*')
+          .eq('prompt_id', prompt.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const parsed = z.array(promptChangeEventSchema).safeParse(data);
+        if (!parsed.success) {
+          console.error('Invalid prompt_change_events payload', parsed.error);
+          setMetadataEvents([]);
+          return;
+        }
+
+        setMetadataEvents(parsed.data);
+      } catch (error) {
+        console.error('Failed to fetch metadata events:', error);
+        setMetadataEvents([]);
+      } finally {
+        setIsLoadingMetadataEvents(false);
+      }
+    };
+
+    fetchMetadataEvents();
   }, [prompt.id, isOwner, supabase]);
 
   const missingCount = useMemo(() => {
@@ -689,6 +759,22 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   onRestoreRevision={handleRestoreRevision}
                   isRestoring={isRestoring}
                 />
+              )}
+            </div>
+          )}
+
+          {/* Metadata History Section (Owner Only) */}
+          {isOwner && (
+            <div
+              className="rounded-sm border bg-card/50 p-5 shadow-sm"
+              id="metadata-history-inspector"
+            >
+              {isLoadingMetadataEvents ? (
+                <div className="flex items-center justify-center py-8" id="metadata-history-loading">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <MetadataHistory events={metadataEvents} />
               )}
             </div>
           )}
