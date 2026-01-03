@@ -462,12 +462,12 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               className="mt-0 ring-offset-background focus-visible:outline-none"
               id="pane-source"
             >
-              <ScrollArea
-                className="min-h-[500px] max-h-[700px] rounded-sm border bg-card/40 backdrop-blur-sm p-6"
-                id="source-view-scroll"
+              <div
+                className="rounded-sm border bg-card/40 backdrop-blur-sm p-6"
+                id="source-view-content"
               >
-                <PromptInline content={prompt.content} values={values} />
-              </ScrollArea>
+                <PromptInline content={activeContent} values={values} />
+              </div>
             </TabsContent>
 
             <TabsContent
@@ -475,9 +475,9 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               className="mt-0 ring-offset-background focus-visible:outline-none"
               id="pane-preview"
             >
-              <ScrollArea
-                className="min-h-[500px] max-h-[700px] rounded-sm border bg-muted/30 p-6"
-                id="preview-view-scroll"
+              <div
+                className="rounded-sm border bg-muted/30 p-6"
+                id="preview-view-content"
               >
                 <pre
                   className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/90"
@@ -489,7 +489,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                     </span>
                   )}
                 </pre>
-              </ScrollArea>
+              </div>
               <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3">
                 <div className="text-[11px] text-muted-foreground">
                   Filled with{' '}
