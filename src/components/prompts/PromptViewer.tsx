@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { buildSlugId, slugify } from '@/lib/slug';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { RevisionHistory, type Revision } from './RevisionHistory';
 import { MetadataHistory } from './MetadataHistory';
 import { type JsonValue, type PromptChangeEvent } from '@/lib/promptChangeEvents';
@@ -166,10 +167,11 @@ interface PromptViewerProps {
 
 export default function PromptViewer({ prompt }: PromptViewerProps) {
   const { user } = useAuth();
+  const [isCopied, setIsCopied] = useState(false);
+  const [isOutputCopied, setIsOutputCopied] = useState(false);
   const [isForking, setIsForking] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
@@ -261,15 +263,17 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     return variables.filter((v) => !values[v.key]?.trim()).length;
   }, [variables, values]);
 
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 2000);
-  };
-
-  const handleCopy = async (text: string, label: string) => {
+  const handleCopy = async (text: string, label: string, isOutput: boolean = false) => {
     try {
       await navigator.clipboard.writeText(text);
-      showToast(`Copied ${label}`);
+      if (isOutput) {
+        setIsOutputCopied(true);
+        setTimeout(() => setIsOutputCopied(false), 2000);
+      } else {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      }
+      toast.success(`Copied ${label}`);
     } catch {
       const textArea = document.createElement('textarea');
       textArea.value = text;
@@ -278,7 +282,17 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
       textArea.select();
       try {
         document.execCommand('copy');
-        showToast(`Copied ${label}`);
+        if (isOutput) {
+          setIsOutputCopied(true);
+          setTimeout(() => setIsOutputCopied(false), 2000);
+        } else {
+          setIsCopied(true);
+          setTimeout(() => setIsCopied(false), 2000);
+        }
+        toast.success(`Copied ${label}`);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        toast.error(`Failed to copy ${label}`);
       } finally {
         document.body.removeChild(textArea);
       }
@@ -314,12 +328,12 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
       if (error) throw error;
 
       if (data) {
-        showToast('Forked successfully');
+        toast.success('Forked successfully');
         router.push(`/prompts/${buildSlugId(forkSlug, data.id)}/edit`);
       }
     } catch (error) {
       console.error('Failed to fork prompt:', error);
-      showToast('Fork failed');
+      toast.error('Fork failed');
     } finally {
       setIsForking(false);
     }
@@ -344,7 +358,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
       // Optimistic update
       setOptimisticContent(revision.content);
-      showToast('Version restored successfully');
+      toast.success('Version restored successfully');
       setSelectedRevision(null);
       
       // Refresh to get latest data (including new revision from trigger)
@@ -360,7 +374,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
     } catch (error) {
       console.error('Failed to restore revision:', error);
-      showToast('Restore failed');
+      toast.error('Restore failed');
     } finally {
       setIsRestoring(false);
     }
@@ -382,21 +396,6 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
       className="flex flex-col bg-background selection:bg-brand-bg selection:text-brand"
       id="prompt-viewer-page"
     >
-      {/* Toast */}
-      {toastMessage && (
-        <div
-          className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-2"
-          id="global-toast"
-        >
-          <div className="bg-popover border border-border shadow-2xl rounded-sm px-4 py-2.5 flex items-center gap-2.5">
-            <div className="h-4 w-4 rounded-sm bg-brand/10 flex items-center justify-center">
-              <Check className="h-3 w-3 text-brand" />
-            </div>
-            <span className="text-xs font-medium">{toastMessage}</span>
-          </div>
-        </div>
-      )}
-
       {/* Header Bar */}
       <div
         className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6"
@@ -455,9 +454,14 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               size="sm"
               onClick={() => handleCopy(prompt.content, 'Template')}
               className="h-8 text-xs border-dashed gap-1.5"
-              id="btn-copy"
+              id="btn-copy-template"
             >
-              <Copy className="h-3.5 w-3.5 text-muted-foreground" /> Copy
+              {isCopied ? (
+                <Check className="h-3.5 w-3.5 text-brand" />
+              ) : (
+                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+              {isCopied ? 'Copied' : 'Copy'}
             </Button>
           )}
 
@@ -574,12 +578,17 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleCopy(filledOutput, 'Output')}
+                  onClick={() => handleCopy(filledOutput, 'Output', true)}
                   disabled={missingCount > 0}
-                  className="h-7 text-[11px] font-medium transition-all hover:border-brand hover:text-brand"
-                  id="btn-copy-output"
+                  className="h-7 text-[11px] font-medium transition-all hover:border-brand hover:text-brand gap-1.5"
+                  id="btn-copy-raw-output"
                 >
-                  Copy Raw Output
+                  {isOutputCopied ? (
+                    <Check className="h-3 w-3 text-brand" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                  {isOutputCopied ? 'Copied Raw' : 'Copy Raw Output'}
                 </Button>
               </div>
             </TabsContent>
