@@ -1,6 +1,13 @@
 # Changelog
 
-## 1.0.0 - 2026-01-03
+## 1.1.0 (2026-01-03)
+- Added reusable CopyButton component with unified brand styling.
+- Fixed sticky positioning in Dashboard layout.
+- Implemented floating copy buttons in Prompt Viewer (Template & Output tabs).
+- Audited and added unique HTML IDs to PromptViewer and PromptEditor.
+- Refactored components to use Sonner for consistent toast notifications.
+
+## 1.0.0 (2026-01-03)
 
 ### Added
 - Fullscreen “Create Prompt” modal with improved tag inputs, PromptViewer styling, and PWA-friendly layout.
@@ -17,7 +24,7 @@
 - Ensured dashboards no longer show double scrollbars in viewer/editor tabs.
 - Eliminated missing commit message edge cases by normalizing blank input to `null`.
 
-## 0.0.1 - 2025-12-28
+## 0.0.1 (2025-12-28)
 
 ### Added
 - Initial implementation of PromptManager.
