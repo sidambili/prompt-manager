@@ -2,17 +2,20 @@
 "use client";
 
 import Link from "next/link";
-import { Clock, Globe, Lock, MoreHorizontal, Copy } from "lucide-react";
+import { Clock, Globe, Lock, MoreHorizontal, Copy, Check } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface PromptCardProps {
     prompt: {
@@ -32,10 +35,20 @@ interface PromptCardProps {
 }
 
 export default function PromptCard({ prompt }: PromptCardProps) {
-    const handleCopy = (e: React.MouseEvent) => {
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopy = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        navigator.clipboard.writeText(prompt.content);
+        try {
+            await navigator.clipboard.writeText(prompt.content);
+            setIsCopied(true);
+            toast.success("Copied to clipboard");
+            setTimeout(() => setIsCopied(false), 2000);
+        } catch (err) {
+            console.error("Failed to copy text: ", err);
+            toast.error("Failed to copy to clipboard");
+        }
     };
 
     return (
@@ -69,29 +82,37 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                     </div>
 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
+                        <CopyButton
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 hover:text-brand hover:bg-brand-bg"
-                            onClick={handleCopy}
+                            value={prompt.content}
+                            label="prompt content"
                             title="Copy prompt content"
-                        >
-                            <Copy className="h-3.5 w-3.5" />
-                        </Button>
+                            id={`copy-btn-${prompt.id}`}
+                        />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" id={`more-actions-${prompt.id}`}>
                                     <MoreHorizontal className="h-3.5 w-3.5" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild className="cursor-pointer">
+                                <DropdownMenuItem asChild className="cursor-pointer" id={`view-details-${prompt.id}`}>
                                     <Link href={`/dashboard/prompts/${prompt.id}`}>View Details</Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleCopy} className="cursor-pointer">
+                                <DropdownMenuItem 
+                                    onSelect={(e) => {
+                                        e.preventDefault();
+                                        navigator.clipboard.writeText(prompt.content);
+                                        toast.success("Copied prompt content");
+                                    }}
+                                    className="cursor-pointer"
+                                    id={`copy-dropdown-${prompt.id}`}
+                                >
                                     Copy Content
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive cursor-pointer">
+                                <DropdownMenuItem className="text-destructive cursor-pointer" id={`delete-prompt-${prompt.id}`}>
                                     Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

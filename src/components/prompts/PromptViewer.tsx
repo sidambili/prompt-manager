@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Copy,
   GitFork,
   Edit2,
   Globe,
@@ -27,6 +26,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { buildSlugId, slugify } from '@/lib/slug';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { CopyButton } from '@/components/ui/copy-button';
 import { RevisionHistory, type Revision } from './RevisionHistory';
 import { MetadataHistory } from './MetadataHistory';
 import { type JsonValue, type PromptChangeEvent } from '@/lib/promptChangeEvents';
@@ -169,7 +170,6 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
   const [isForking, setIsForking] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [isLoadingRevisions, setIsLoadingRevisions] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
@@ -261,30 +261,6 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     return variables.filter((v) => !values[v.key]?.trim()).length;
   }, [variables, values]);
 
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 2000);
-  };
-
-  const handleCopy = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      showToast(`Copied ${label}`);
-    } catch {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        showToast(`Copied ${label}`);
-      } finally {
-        document.body.removeChild(textArea);
-      }
-    }
-  };
-
   const handleFork = async () => {
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
@@ -314,12 +290,12 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
       if (error) throw error;
 
       if (data) {
-        showToast('Forked successfully');
+        toast.success('Forked successfully');
         router.push(`/prompts/${buildSlugId(forkSlug, data.id)}/edit`);
       }
     } catch (error) {
       console.error('Failed to fork prompt:', error);
-      showToast('Fork failed');
+      toast.error('Fork failed');
     } finally {
       setIsForking(false);
     }
@@ -344,7 +320,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
       // Optimistic update
       setOptimisticContent(revision.content);
-      showToast('Version restored successfully');
+      toast.success('Version restored successfully');
       setSelectedRevision(null);
       
       // Refresh to get latest data (including new revision from trigger)
@@ -360,7 +336,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
     } catch (error) {
       console.error('Failed to restore revision:', error);
-      showToast('Restore failed');
+      toast.error('Restore failed');
     } finally {
       setIsRestoring(false);
     }
@@ -382,41 +358,27 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
       className="flex flex-col bg-background selection:bg-brand-bg selection:text-brand"
       id="prompt-viewer-page"
     >
-      {/* Toast */}
-      {toastMessage && (
-        <div
-          className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-2"
-          id="global-toast"
-        >
-          <div className="bg-popover border border-border shadow-2xl rounded-sm px-4 py-2.5 flex items-center gap-2.5">
-            <div className="h-4 w-4 rounded-sm bg-brand/10 flex items-center justify-center">
-              <Check className="h-3 w-3 text-brand" />
-            </div>
-            <span className="text-xs font-medium">{toastMessage}</span>
-          </div>
-        </div>
-      )}
-
       {/* Header Bar */}
       <div
         className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6"
         id="viewer-header-bar"
       >
         <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-widest" id="breadcrumb-navigation">
             <Link
               href="/dashboard"
               className="hover:text-foreground transition-colors flex items-center gap-1"
+              id="breadcrumb-home"
             >
               <Home className="h-3 w-3" />
               Library
             </Link>
-            <span>/</span>
-            <span className="hover:text-foreground transition-colors">
+            <span id="breadcrumb-sep-1">/</span>
+            <span className="hover:text-foreground transition-colors" id="breadcrumb-category">
               {category?.name}
             </span>
-            <span>/</span>
-            <span className="text-foreground">{subcategory?.name}</span>
+            <span id="breadcrumb-sep-2">/</span>
+            <span className="text-foreground" id="breadcrumb-subcategory">{subcategory?.name}</span>
           </div>
             <h1
             className="text-2xl font-bold tracking-tight text-foreground"
@@ -432,7 +394,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             )}
           </h1>
           {prompt.description && (
-            <p className="text-sm text-muted-foreground max-w-2xl">
+            <p className="text-sm text-muted-foreground max-w-2xl" id="prompt-description">
               {prompt.description}
             </p>
           )}
@@ -450,15 +412,15 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Current
             </Button>
           ) : (
-            <Button
+            <CopyButton
               variant="outline"
               size="sm"
-              onClick={() => handleCopy(prompt.content, 'Template')}
-              className="h-8 text-xs border-dashed gap-1.5"
-              id="btn-copy"
-            >
-              <Copy className="h-3.5 w-3.5 text-muted-foreground" /> Copy
-            </Button>
+              value={prompt.content}
+              label="Template"
+              showText
+              className="h-8 text-xs border-dashed"
+              id="btn-copy-template"
+            />
           )}
 
           {prompt.is_public && !isOwner && (
@@ -510,8 +472,8 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         {/* Content Column */}
         <div className="lg:col-span-8 space-y-4" id="content-column">
           <Tabs defaultValue="source" className="w-full flex flex-col" id="content-tabs">
-            <div className="flex items-center justify-between border-b mb-4">
-              <TabsList className="bg-transparent h-auto p-0 gap-2 justify-start">
+            <div className="flex items-center justify-between border-b mb-4" id="tabs-header">
+              <TabsList className="bg-transparent h-auto p-0 gap-2 justify-start" id="tabs-list">
                 <TabsTrigger
                   value="source"
                   className="h-9 px-5 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
@@ -532,55 +494,88 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
             <TabsContent
               value="source"
-              className="mt-0 ring-offset-background focus-visible:outline-none"
+              className="mt-0 ring-offset-background focus-visible:outline-none overflow-visible"
               id="pane-source"
             >
               <div
-                className="rounded-sm border bg-card/40 backdrop-blur-sm p-6"
+                className="group relative rounded-sm border bg-card/40"
                 id="source-view-content"
               >
-                <PromptInline content={activeContent} values={values} />
+                <div className="sticky top-0 z-20 flex justify-end p-2 pointer-events-none w-full">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+                    <CopyButton
+                      variant="outline"
+                      size="icon"
+                      value={activeContent}
+                      label="Template"
+                      className="h-7 w-7 bg-background/80 backdrop-blur-sm hover:border-brand hover:text-brand shadow-sm"
+                      title="Copy template"
+                      id="btn-floating-copy-template"
+                    />
+                  </div>
+                </div>
+                <div className="p-6 pt-0">
+                  <PromptInline content={activeContent} values={values} />
+                </div>
               </div>
             </TabsContent>
 
             <TabsContent
               value="preview"
-              className="mt-0 ring-offset-background focus-visible:outline-none"
+              className="mt-0 ring-offset-background focus-visible:outline-none overflow-visible"
               id="pane-preview"
             >
               <div
-                className="rounded-sm border bg-muted/30 p-6"
+                className="group relative rounded-sm border bg-muted/30"
                 id="preview-view-content"
               >
-                <pre
-                  className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/90"
-                  id="preview-text"
-                >
-                  {filledOutput || (
-                    <span className="text-muted-foreground italic">
-                      No output generated yet.
-                    </span>
-                  )}
-                </pre>
+                <div className="sticky top-0 z-20 flex justify-end p-2 pointer-events-none w-full">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+                    <CopyButton
+                      variant="outline"
+                      size="icon"
+                      value={filledOutput}
+                      label="Output"
+                      disabled={missingCount > 0}
+                      className="h-7 w-7 bg-background/80 backdrop-blur-sm hover:border-brand hover:text-brand shadow-sm"
+                      title="Copy output"
+                      id="btn-floating-copy-output"
+                    />
+                  </div>
+                </div>
+                <div className="p-6 pt-0">
+                  <pre
+                    className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/90"
+                    id="preview-text"
+                  >
+                    {filledOutput || (
+                      <span className="text-muted-foreground italic">
+                        No output generated yet.
+                      </span>
+                    )}
+                  </pre>
+                </div>
               </div>
-              <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3">
-                <div className="text-[11px] text-muted-foreground">
+              <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3" id="preview-footer">
+                <div className="text-[11px] text-muted-foreground" id="preview-stats">
                   Filled with{' '}
-                  <span className="font-mono text-brand">
+                  <span className="font-mono text-brand" id="stat-filled-count">
                     {variables.length - missingCount}
                   </span>{' '}
-                  / <span className="font-mono">{variables.length}</span> variables
+                  / <span className="font-mono" id="stat-total-count">{variables.length}</span> variables
                 </div>
-                <Button
+                <CopyButton
                   variant="outline"
                   size="sm"
-                  onClick={() => handleCopy(filledOutput, 'Output')}
+                  value={filledOutput}
+                  label="Output"
+                  showText
+                  idleText="Copy Raw Output"
+                  successText="Copied Raw"
                   disabled={missingCount > 0}
                   className="h-7 text-[11px] font-medium transition-all hover:border-brand hover:text-brand"
-                  id="btn-copy-output"
-                >
-                  Copy Raw Output
-                </Button>
+                  id="btn-copy-raw-output"
+                />
               </div>
             </TabsContent>
           </Tabs>
@@ -593,23 +588,24 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             className="rounded-sm border bg-card/50 shadow-sm overflow-hidden"
             id="variables-inspector"
           >
-            <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between" id="variables-inspector-header">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground" id="variables-title">
                 Parameters
               </h3>
               <Badge
-                variant="outline"
+                variant="secondary"
                 className={cn(
                   'text-[10px] h-4 rounded-sm border-transparent',
                   missingCount === 0
-                    ? 'bg-brand/20 text-brand'
+                    ? ' '
                     : 'bg-orange/10 text-orange-400'
                 )}
+                id="variables-badge"
               >
-                {missingCount === 0 ? 'READY' : `${missingCount} MISSING`}
+                {missingCount === 0 ? 'N/A' : `${missingCount} MISSING`}
               </Badge>
             </div>
-            <div className="p-5 space-y-5">
+            <div className="p-5 space-y-5" id="variables-list-container">
               {variables.length === 0 ? (
                 <div className="text-center py-6 space-y-2">
                   <div className="h-8 w-8 rounded-sm bg-muted mx-auto flex items-center justify-center opacity-40">
@@ -659,83 +655,89 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             className="rounded-sm border bg-card p-5 space-y-4 shadow-sm"
             id="meta-inspector"
           >
-            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Identity
-            </h3>
-            <div className="space-y-3">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
-                  Visibility
-                </span>
-                <Badge
-                  variant="outline"
-                  className="w-fit text-[11px] h-5 gap-1.5 px-2 border-border/50 bg-muted/20"
-                >
-                  {prompt.is_public ? (
-                    <Globe className="h-3 w-3 text-brand" />
-                  ) : (
-                    <Lock className="h-3 w-3" />
-                  )}
-                  {prompt.is_public
-                    ? prompt.is_listed
-                      ? 'Public & Listed'
-                      : 'Public & Unlisted'
-                    : 'Private'}
-                </Badge>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
-                  Classification
-                </span>
-                <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-4" id="meta-inspector-inner">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground" id="meta-title">
+                Identity
+              </h3>
+              <div className="space-y-3" id="meta-sections">
+                <div className="flex flex-col gap-1" id="meta-visibility-section">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold" id="label-visibility">
+                    Visibility
+                  </span>
                   <Badge
-                    variant="secondary"
-                    className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                    variant="outline"
+                    className="w-fit text-[11px] h-5 gap-1.5 px-2 border-border/50 bg-muted/20"
+                    id="badge-visibility"
                   >
-                    {category?.name}
-                  </Badge>
-                  <Badge
-                    variant="secondary"
-                    className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
-                  >
-                    {subcategory?.name}
+                    {prompt.is_public ? (
+                      <Globe className="h-3 w-3 text-brand" />
+                    ) : (
+                      <Lock className="h-3 w-3" />
+                    )}
+                    {prompt.is_public
+                      ? prompt.is_listed
+                        ? 'Public & Listed'
+                        : 'Public & Unlisted'
+                      : 'Private'}
                   </Badge>
                 </div>
-              </div>
-
-              {prompt.tags && prompt.tags.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">
-                    Tags
+                <div className="flex flex-col gap-1" id="meta-classification-section">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold" id="label-classification">
+                    Classification
                   </span>
-                  <div className="flex flex-wrap gap-1.5 opacity-90">
-                    {prompt.tags.map(tag => (
-                      <Badge
-                        key={tag}
-                        variant="secondary"
-                        className="text-[10px] h-5 rounded hover:bg-muted font-mono border-transparent bg-muted/50"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+                  <div className="flex flex-wrap gap-1.5" id="classification-badges">
+                    <Badge
+                      variant="secondary"
+                      className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                      id="badge-cat"
+                    >
+                      {category?.name}
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                      id="badge-sub"
+                    >
+                      {subcategory?.name}
+                    </Badge>
                   </div>
                 </div>
-              )}
 
-              <div className="pt-2 border-t mt-4 space-y-2">
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-muted-foreground">Last Updated</span>
-                  <span className="font-mono">
-                    {formatDistanceToNow(new Date(prompt.updated_at), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-muted-foreground">Created</span>
-                  <span className="font-mono">
-                    {new Date(prompt.created_at).toLocaleDateString()}
-                  </span>
+                {prompt.tags && prompt.tags.length > 0 && (
+                  <div className="flex flex-col gap-1" id="meta-tags-section">
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold" id="label-tags">
+                      Tags
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 opacity-90" id="tag-badges">
+                      {prompt.tags.map(tag => (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="text-[10px] h-5 rounded hover:bg-muted font-mono border-transparent bg-muted/50"
+                          id={`tag-badge-${tag}`}
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t mt-4 space-y-2" id="meta-timestamps">
+                  <div className="flex justify-between items-center text-[11px]" id="row-updated">
+                    <span className="text-muted-foreground" id="label-updated">Last Updated</span>
+                    <span className="font-mono" id="val-updated">
+                      {formatDistanceToNow(new Date(prompt.updated_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px]" id="row-created">
+                    <span className="text-muted-foreground" id="label-created">Created</span>
+                    <span className="font-mono" id="val-created">
+                      {new Date(prompt.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
