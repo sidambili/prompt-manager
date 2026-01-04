@@ -288,23 +288,25 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
             id="editor-header-bar"
           >
             <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-widest" id="breadcrumb-navigation">
                 <Link
                   href="/dashboard"
                   className="hover:text-foreground transition-colors flex items-center gap-1"
+                  id="breadcrumb-home"
                 >
                   <Home className="h-3 w-3" />
                   Library
                 </Link>
-                <span>/</span>
+                <span id="breadcrumb-sep-1">/</span>
                 <Link
                   href={canonicalUrl}
                   className="hover:text-foreground transition-colors"
+                  id="breadcrumb-prompt"
                 >
                   {prompt.title}
                 </Link>
-                <span>/</span>
-                <span className="text-foreground">Edit</span>
+                <span id="breadcrumb-sep-2">/</span>
+                <span className="text-foreground" id="breadcrumb-edit">Edit</span>
               </div>
               <FormField
                 control={form.control}
@@ -399,7 +401,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                 id="content-tabs"
               >
                 <div className="flex items-center justify-between border-b mb-4">
-                  <TabsList className="bg-transparent h-auto p-0 gap-8 justify-start">
+                  <TabsList className="bg-transparent h-auto p-0 gap-8 justify-start" id="tabs-list">
                     <TabsTrigger
                       value="source"
                       className="h-9 px-0 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
@@ -415,9 +417,9 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                       Output
                     </TabsTrigger>
                   </TabsList>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-brand/5 border border-brand/10">
-                    <div className="h-1.5 w-1.5 rounded-sm bg-brand animate-pulse" />
-                    <span className="text-[10px] text-brand-400 font-mono">EDITING</span>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-brand/5 border border-brand/10" id="editing-indicator">
+                    <div className="h-1.5 w-1.5 rounded-sm bg-brand animate-pulse" id="editing-pulse" />
+                    <span className="text-[10px] text-brand-400 font-mono" id="editing-label">EDITING</span>
                   </div>
                 </div>
 
@@ -465,13 +467,13 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                       )}
                     </pre>
                   </ScrollArea>
-                  <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3">
-                    <div className="text-[11px] text-muted-foreground">
+                  <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3" id="preview-footer">
+                    <div className="text-[11px] text-muted-foreground" id="preview-stats">
                       Filled with{' '}
-                      <span className="font-mono text-brand">
+                      <span className="font-mono text-brand" id="stat-filled-count">
                         {variables.length - missingCount}
                       </span>{' '}
-                      / <span className="font-mono">{variables.length}</span> variables
+                      / <span className="font-mono" id="stat-total-count">{variables.length}</span> variables
                     </div>
                   </div>
                 </TabsContent>
@@ -481,9 +483,9 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
             {/* Inspector Column */}
             <div className="lg:col-span-4 space-y-6" id="inspector-column">
               <div className="rounded-sm border bg-card p-4 space-y-4" id="commit-message-section">
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Revision Note</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="space-y-1" id="commit-header">
+                  <div className="text-sm font-medium" id="commit-title">Revision Note</div>
+                  <div className="text-xs text-muted-foreground" id="commit-desc">
                     Describe what changed in this version. (Optional)
                   </div>
                 </div>
