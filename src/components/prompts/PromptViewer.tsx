@@ -592,15 +592,15 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                 Parameters
               </h3>
               <Badge
-                variant="outline"
+                variant="secondary"
                 className={cn(
                   'text-[10px] h-4 rounded-sm border-transparent',
                   missingCount === 0
-                    ? 'bg-brand/20 text-brand'
+                    ? ' '
                     : 'bg-orange/10 text-orange-400'
                 )}
               >
-                {missingCount === 0 ? 'READY' : `${missingCount} MISSING`}
+                {missingCount === 0 ? 'N/A' : `${missingCount} MISSING`}
               </Badge>
             </div>
             <div className="p-5 space-y-5">
