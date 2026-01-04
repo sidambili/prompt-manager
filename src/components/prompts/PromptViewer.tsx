@@ -364,20 +364,21 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         id="viewer-header-bar"
       >
         <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-widest" id="breadcrumb-navigation">
             <Link
               href="/dashboard"
               className="hover:text-foreground transition-colors flex items-center gap-1"
+              id="breadcrumb-home"
             >
               <Home className="h-3 w-3" />
               Library
             </Link>
-            <span>/</span>
-            <span className="hover:text-foreground transition-colors">
+            <span id="breadcrumb-sep-1">/</span>
+            <span className="hover:text-foreground transition-colors" id="breadcrumb-category">
               {category?.name}
             </span>
-            <span>/</span>
-            <span className="text-foreground">{subcategory?.name}</span>
+            <span id="breadcrumb-sep-2">/</span>
+            <span className="text-foreground" id="breadcrumb-subcategory">{subcategory?.name}</span>
           </div>
             <h1
             className="text-2xl font-bold tracking-tight text-foreground"
@@ -393,7 +394,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             )}
           </h1>
           {prompt.description && (
-            <p className="text-sm text-muted-foreground max-w-2xl">
+            <p className="text-sm text-muted-foreground max-w-2xl" id="prompt-description">
               {prompt.description}
             </p>
           )}
@@ -471,8 +472,8 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
         {/* Content Column */}
         <div className="lg:col-span-8 space-y-4" id="content-column">
           <Tabs defaultValue="source" className="w-full flex flex-col" id="content-tabs">
-            <div className="flex items-center justify-between border-b mb-4">
-              <TabsList className="bg-transparent h-auto p-0 gap-2 justify-start">
+            <div className="flex items-center justify-between border-b mb-4" id="tabs-header">
+              <TabsList className="bg-transparent h-auto p-0 gap-2 justify-start" id="tabs-list">
                 <TabsTrigger
                   value="source"
                   className="h-9 px-5 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
@@ -555,13 +556,13 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   </pre>
                 </div>
               </div>
-              <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3">
-                <div className="text-[11px] text-muted-foreground">
+              <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3" id="preview-footer">
+                <div className="text-[11px] text-muted-foreground" id="preview-stats">
                   Filled with{' '}
-                  <span className="font-mono text-brand">
+                  <span className="font-mono text-brand" id="stat-filled-count">
                     {variables.length - missingCount}
                   </span>{' '}
-                  / <span className="font-mono">{variables.length}</span> variables
+                  / <span className="font-mono" id="stat-total-count">{variables.length}</span> variables
                 </div>
                 <CopyButton
                   variant="outline"
@@ -587,8 +588,8 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             className="rounded-sm border bg-card/50 shadow-sm overflow-hidden"
             id="variables-inspector"
           >
-            <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <div className="bg-muted/30 px-5 py-3 border-b flex items-center justify-between" id="variables-inspector-header">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground" id="variables-title">
                 Parameters
               </h3>
               <Badge
@@ -599,11 +600,12 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                     ? ' '
                     : 'bg-orange/10 text-orange-400'
                 )}
+                id="variables-badge"
               >
                 {missingCount === 0 ? 'N/A' : `${missingCount} MISSING`}
               </Badge>
             </div>
-            <div className="p-5 space-y-5">
+            <div className="p-5 space-y-5" id="variables-list-container">
               {variables.length === 0 ? (
                 <div className="text-center py-6 space-y-2">
                   <div className="h-8 w-8 rounded-sm bg-muted mx-auto flex items-center justify-center opacity-40">
@@ -653,83 +655,89 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
             className="rounded-sm border bg-card p-5 space-y-4 shadow-sm"
             id="meta-inspector"
           >
-            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Identity
-            </h3>
-            <div className="space-y-3">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
-                  Visibility
-                </span>
-                <Badge
-                  variant="outline"
-                  className="w-fit text-[11px] h-5 gap-1.5 px-2 border-border/50 bg-muted/20"
-                >
-                  {prompt.is_public ? (
-                    <Globe className="h-3 w-3 text-brand" />
-                  ) : (
-                    <Lock className="h-3 w-3" />
-                  )}
-                  {prompt.is_public
-                    ? prompt.is_listed
-                      ? 'Public & Listed'
-                      : 'Public & Unlisted'
-                    : 'Private'}
-                </Badge>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
-                  Classification
-                </span>
-                <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-4" id="meta-inspector-inner">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground" id="meta-title">
+                Identity
+              </h3>
+              <div className="space-y-3" id="meta-sections">
+                <div className="flex flex-col gap-1" id="meta-visibility-section">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold" id="label-visibility">
+                    Visibility
+                  </span>
                   <Badge
-                    variant="secondary"
-                    className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                    variant="outline"
+                    className="w-fit text-[11px] h-5 gap-1.5 px-2 border-border/50 bg-muted/20"
+                    id="badge-visibility"
                   >
-                    {category?.name}
-                  </Badge>
-                  <Badge
-                    variant="secondary"
-                    className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
-                  >
-                    {subcategory?.name}
+                    {prompt.is_public ? (
+                      <Globe className="h-3 w-3 text-brand" />
+                    ) : (
+                      <Lock className="h-3 w-3" />
+                    )}
+                    {prompt.is_public
+                      ? prompt.is_listed
+                        ? 'Public & Listed'
+                        : 'Public & Unlisted'
+                      : 'Private'}
                   </Badge>
                 </div>
-              </div>
-
-              {prompt.tags && prompt.tags.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">
-                    Tags
+                <div className="flex flex-col gap-1" id="meta-classification-section">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold" id="label-classification">
+                    Classification
                   </span>
-                  <div className="flex flex-wrap gap-1.5 opacity-90">
-                    {prompt.tags.map(tag => (
-                      <Badge
-                        key={tag}
-                        variant="secondary"
-                        className="text-[10px] h-5 rounded hover:bg-muted font-mono border-transparent bg-muted/50"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+                  <div className="flex flex-wrap gap-1.5" id="classification-badges">
+                    <Badge
+                      variant="secondary"
+                      className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                      id="badge-cat"
+                    >
+                      {category?.name}
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                      id="badge-sub"
+                    >
+                      {subcategory?.name}
+                    </Badge>
                   </div>
                 </div>
-              )}
 
-              <div className="pt-2 border-t mt-4 space-y-2">
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-muted-foreground">Last Updated</span>
-                  <span className="font-mono">
-                    {formatDistanceToNow(new Date(prompt.updated_at), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-muted-foreground">Created</span>
-                  <span className="font-mono">
-                    {new Date(prompt.created_at).toLocaleDateString()}
-                  </span>
+                {prompt.tags && prompt.tags.length > 0 && (
+                  <div className="flex flex-col gap-1" id="meta-tags-section">
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold" id="label-tags">
+                      Tags
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 opacity-90" id="tag-badges">
+                      {prompt.tags.map(tag => (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="text-[10px] h-5 rounded hover:bg-muted font-mono border-transparent bg-muted/50"
+                          id={`tag-badge-${tag}`}
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t mt-4 space-y-2" id="meta-timestamps">
+                  <div className="flex justify-between items-center text-[11px]" id="row-updated">
+                    <span className="text-muted-foreground" id="label-updated">Last Updated</span>
+                    <span className="font-mono" id="val-updated">
+                      {formatDistanceToNow(new Date(prompt.updated_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px]" id="row-created">
+                    <span className="text-muted-foreground" id="label-created">Created</span>
+                    <span className="font-mono" id="val-created">
+                      {new Date(prompt.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
