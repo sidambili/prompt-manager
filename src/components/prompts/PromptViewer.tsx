@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Copy,
   GitFork,
   Edit2,
   Globe,
@@ -28,6 +27,7 @@ import Link from 'next/link';
 import { buildSlugId, slugify } from '@/lib/slug';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { CopyButton } from '@/components/ui/copy-button';
 import { RevisionHistory, type Revision } from './RevisionHistory';
 import { MetadataHistory } from './MetadataHistory';
 import { type JsonValue, type PromptChangeEvent } from '@/lib/promptChangeEvents';
@@ -167,8 +167,6 @@ interface PromptViewerProps {
 
 export default function PromptViewer({ prompt }: PromptViewerProps) {
   const { user } = useAuth();
-  const [isCopied, setIsCopied] = useState(false);
-  const [isOutputCopied, setIsOutputCopied] = useState(false);
   const [isForking, setIsForking] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -262,42 +260,6 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
   const missingCount = useMemo(() => {
     return variables.filter((v) => !values[v.key]?.trim()).length;
   }, [variables, values]);
-
-  const handleCopy = async (text: string, label: string, isOutput: boolean = false) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      if (isOutput) {
-        setIsOutputCopied(true);
-        setTimeout(() => setIsOutputCopied(false), 2000);
-      } else {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      }
-      toast.success(`Copied ${label}`);
-    } catch {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        if (isOutput) {
-          setIsOutputCopied(true);
-          setTimeout(() => setIsOutputCopied(false), 2000);
-        } else {
-          setIsCopied(true);
-          setTimeout(() => setIsCopied(false), 2000);
-        }
-        toast.success(`Copied ${label}`);
-      } catch (err) {
-        console.error('Failed to copy:', err);
-        toast.error(`Failed to copy ${label}`);
-      } finally {
-        document.body.removeChild(textArea);
-      }
-    }
-  };
 
   const handleFork = async () => {
     if (!user) {
@@ -449,20 +411,15 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Current
             </Button>
           ) : (
-            <Button
+            <CopyButton
               variant="outline"
               size="sm"
-              onClick={() => handleCopy(prompt.content, 'Template')}
-              className="h-8 text-xs border-dashed gap-1.5"
+              value={prompt.content}
+              label="Template"
+              showText
+              className="h-8 text-xs border-dashed"
               id="btn-copy-template"
-            >
-              {isCopied ? (
-                <Check className="h-3.5 w-3.5 text-brand" />
-              ) : (
-                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-              )}
-              {isCopied ? 'Copied' : 'Copy'}
-            </Button>
+            />
           )}
 
           {prompt.is_public && !isOwner && (
@@ -545,20 +502,15 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               >
                 <div className="sticky top-0 z-20 flex justify-end p-2 pointer-events-none w-full">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-                    <Button
+                    <CopyButton
                       variant="outline"
                       size="icon"
-                      onClick={() => handleCopy(activeContent, 'Template')}
+                      value={activeContent}
+                      label="Template"
                       className="h-7 w-7 bg-background/80 backdrop-blur-sm hover:border-brand hover:text-brand shadow-sm"
                       title="Copy template"
                       id="btn-floating-copy-template"
-                    >
-                      {isCopied ? (
-                        <Check className="h-3.5 w-3.5 text-brand" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
+                    />
                   </div>
                 </div>
                 <div className="p-6 pt-0">
@@ -595,21 +547,18 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   </span>{' '}
                   / <span className="font-mono">{variables.length}</span> variables
                 </div>
-                <Button
+                <CopyButton
                   variant="outline"
                   size="sm"
-                  onClick={() => handleCopy(filledOutput, 'Output', true)}
+                  value={filledOutput}
+                  label="Output"
+                  showText
+                  idleText="Copy Raw Output"
+                  successText="Copied Raw"
                   disabled={missingCount > 0}
-                  className="h-7 text-[11px] font-medium transition-all hover:border-brand hover:text-brand gap-1.5"
+                  className="h-7 text-[11px] font-medium transition-all hover:border-brand hover:text-brand"
                   id="btn-copy-raw-output"
-                >
-                  {isOutputCopied ? (
-                    <Check className="h-3 w-3 text-brand" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                  {isOutputCopied ? 'Copied Raw' : 'Copy Raw Output'}
-                </Button>
+                />
               </div>
             </TabsContent>
           </Tabs>

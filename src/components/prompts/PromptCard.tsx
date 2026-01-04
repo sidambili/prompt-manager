@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -81,20 +82,15 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                     </div>
 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
+                        <CopyButton
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 hover:text-brand hover:bg-brand-bg"
-                            onClick={handleCopy}
+                            value={prompt.content}
+                            label="prompt content"
                             title="Copy prompt content"
                             id={`copy-btn-${prompt.id}`}
-                        >
-                            {isCopied ? (
-                                <Check className="h-3.5 w-3.5 text-brand" />
-                            ) : (
-                                <Copy className="h-3.5 w-3.5" />
-                            )}
-                        </Button>
+                        />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" id={`more-actions-${prompt.id}`}>
@@ -106,7 +102,11 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                                     <Link href={`/dashboard/prompts/${prompt.id}`}>View Details</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                    onClick={handleCopy} 
+                                    onSelect={(e) => {
+                                        e.preventDefault();
+                                        navigator.clipboard.writeText(prompt.content);
+                                        toast.success("Copied prompt content");
+                                    }}
                                     className="cursor-pointer"
                                     id={`copy-dropdown-${prompt.id}`}
                                 >
