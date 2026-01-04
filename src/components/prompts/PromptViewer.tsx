@@ -536,14 +536,34 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
 
             <TabsContent
               value="source"
-              className="mt-0 ring-offset-background focus-visible:outline-none"
+              className="mt-0 ring-offset-background focus-visible:outline-none overflow-visible"
               id="pane-source"
             >
               <div
-                className="rounded-sm border bg-card/40 backdrop-blur-sm p-6"
+                className="group relative rounded-sm border bg-card/40"
                 id="source-view-content"
               >
-                <PromptInline content={activeContent} values={values} />
+                <div className="sticky top-0 z-20 flex justify-end p-2 pointer-events-none w-full">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleCopy(activeContent, 'Template')}
+                      className="h-7 w-7 bg-background/80 backdrop-blur-sm hover:border-brand hover:text-brand shadow-sm"
+                      title="Copy template"
+                      id="btn-floating-copy-template"
+                    >
+                      {isCopied ? (
+                        <Check className="h-3.5 w-3.5 text-brand" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <div className="p-6 pt-0">
+                  <PromptInline content={activeContent} values={values} />
+                </div>
               </div>
             </TabsContent>
 
