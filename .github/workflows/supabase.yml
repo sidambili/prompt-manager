@@ -27,10 +27,10 @@ jobs:
         run: |
           supabase db lint
           supabase db reset
-          # Verify RLS policies (using our custom script if available)
+          # Verify RLS policies (using vitest to handle ESM/TS)
           if [ -f "scripts/verify-rls.ts" ]; then
             npm ci
-            npx ts-node scripts/verify-rls.ts
+            npx vitest run scripts/verify-rls.ts
           fi
 
       - name: Check for Drift
