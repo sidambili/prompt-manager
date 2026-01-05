@@ -352,6 +352,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
   // Handle nested aliased category
   const categoryData = subcategory?.category || subcategory?.categories;
   const category = Array.isArray(categoryData) ? categoryData[0] : categoryData;
+  const categorySlug = (category as any)?.slug;
 
   return (
     <div
@@ -374,9 +375,19 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               Library
             </Link>
             <span id="breadcrumb-sep-1">/</span>
-            <span className="hover:text-foreground transition-colors" id="breadcrumb-category">
-              {category?.name}
-            </span>
+            {category ? (
+              <Link
+                href={`/dashboard/categories/${categorySlug}`}
+                className="hover:text-foreground transition-colors"
+                id="breadcrumb-category"
+              >
+                {category.name}
+              </Link>
+            ) : (
+              <span className="text-muted-foreground" id="breadcrumb-category-none">
+                No Category
+              </span>
+            )}
             <span id="breadcrumb-sep-2">/</span>
             <span className="text-foreground" id="breadcrumb-subcategory">{subcategory?.name}</span>
           </div>
