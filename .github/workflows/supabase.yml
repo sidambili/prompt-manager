@@ -1,0 +1,37 @@
+name: Database Migrations
+
+on:
+  pull_request:
+    branches: [ main, feat/cicd-pipelines ]
+  push:
+    branches: [ feat/cicd-pipelines ]
+    paths:
+      - 'supabase/migrations/**'
+
+jobs:
+  verify:
+    name: Verify Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.70.5
+
+      - name: Start Supabase Local
+        run: supabase start
+
+      - name: Verify Migration Health
+        run: |
+          supabase db lint
+          supabase db reset
+          # Verify RLS policies (using vitest to handle ESM/TS)
+          if [ -f "scripts/verify-rls.ts" ]; then
+            npm ci
+            npx vitest run scripts/verify-rls.ts --dir . --passWithNoTests --globals
+          fi
+
+      - name: Check for Drift
+        run: supabase db diff --local > drift.txt && [ ! -s drift.txt ] || (echo "Schema drift detected" && cat drift.txt && exit 1)
