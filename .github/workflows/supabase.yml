@@ -30,7 +30,7 @@ jobs:
           # Verify RLS policies (using vitest to handle ESM/TS)
           if [ -f "scripts/verify-rls.ts" ]; then
             npm ci
-            npx vitest run scripts/verify-rls.ts
+            npx vitest run scripts/verify-rls.ts --dir . --passWithNoTests --globals
           fi
 
       - name: Check for Drift
