@@ -47,7 +47,7 @@ const formSchema = z.object({
     title: z.string().min(1, "Title is required").max(100, "Title is too long"),
     content: z.string().min(10, "Content must be at least 10 characters"),
     description: z.string().max(500, "Description is too long").default(""),
-    subcategory_id: z.string().min(1, "Category is required"),
+    subcategory_id: z.string().nullable(),
     is_public: z.boolean().default(false),
     is_listed: z.boolean().default(false),
     tags: z.array(z.string()).max(10, "Max 10 tags allowed").default([]),
@@ -152,6 +152,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
         setIsLoading(true);
 
         const parsedValues = formSchema.parse(values);
+        const subcategoryId = parsedValues.subcategory_id === "none" ? null : parsedValues.subcategory_id;
         const normalizedVisibility = normalizeVisibility({
             is_public: parsedValues.is_public,
             is_listed: parsedValues.is_listed,
@@ -166,7 +167,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                     title: parsedValues.title,
                     content: parsedValues.content,
                     description: parsedValues.description,
-                    subcategory_id: parsedValues.subcategory_id,
+                    subcategory_id: subcategoryId,
                     is_public: normalizedVisibility.is_public,
                     is_listed: normalizedVisibility.is_listed,
                     tags: parsedValues.tags,
@@ -268,7 +269,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                         render={({ field }) => (
                                             <FormItem id="create-prompt-category-field">
                                                 <FormLabel className="text-sm font-medium" id="create-prompt-category-label">Collection</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value || "none"}>
                                                     <FormControl>
                                                         <SelectTrigger
                                                             className="h-10 text-sm bg-background border-border/50 focus:border-brand transition-all"
@@ -278,6 +279,9 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent className="bg-card border-border z-[110]" id="create-prompt-category-content">
+                                                        <SelectItem value="none" id="create-prompt-subcategory-none">
+                                                            No Collection
+                                                        </SelectItem>
                                                         {categories.map((cat) => (
                                                             <div key={cat.id} id={`create-prompt-category-group-${cat.id}`}>
                                                                 <div

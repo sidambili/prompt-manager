@@ -49,13 +49,16 @@ export function PromptSettings({ categories, isLoading }: PromptSettingsProps) {
                                 <FormLabel className="text-[10px] uppercase font-semibold text-muted-foreground">
                                     Category
                                 </FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value || "none"}>
                                     <FormControl>
                                         <SelectTrigger disabled={isLoading} className="h-8 text-xs">
                                             <SelectValue placeholder="Select category" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
+                                        <SelectItem value="none" className="text-xs">
+                                            No Collection
+                                        </SelectItem>
                                         {categories.map((cat) => (
                                             <div key={cat.id}>
                                                 <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase bg-muted/30">

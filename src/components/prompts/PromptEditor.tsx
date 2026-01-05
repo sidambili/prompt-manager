@@ -63,7 +63,7 @@ const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
   content: z.string().min(1, 'Content is required'),
   description: z.string().max(500, 'Description is too long').default(''),
-  subcategory_id: z.string().min(1, 'Category is required'),
+  subcategory_id: z.string().nullable(),
   is_public: z.boolean().default(false),
   is_listed: z.boolean().default(true),
   tags: z.array(z.string()).max(10, 'Max 10 tags').default([]),
@@ -208,6 +208,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
     try {
       const parsedValues = formSchema.parse(formValues);
+      const subcategoryId = parsedValues.subcategory_id === "none" ? null : parsedValues.subcategory_id;
       const normalizedVisibility = normalizeVisibility({
         is_public: parsedValues.is_public,
         is_listed: parsedValues.is_listed,
@@ -221,7 +222,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
         p_title: parsedValues.title,
         p_content: parsedValues.content,
         p_description: parsedValues.description,
-        p_subcategory_id: parsedValues.subcategory_id,
+        p_subcategory_id: subcategoryId,
         p_is_public: normalizedVisibility.is_public,
         p_is_listed: normalizedVisibility.is_listed,
         p_tags: parsedValues.tags,
