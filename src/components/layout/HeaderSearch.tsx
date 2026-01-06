@@ -74,8 +74,7 @@ export function HeaderSearch() {
                             <div className="py-1 max-h-[300px] overflow-y-auto" id="header-search-results-list">
                                 {results.map((p) => (
                                     (() => {
-                                        const isOwned = !!user?.id && p.user_id === user.id;
-                                        const href = isOwned
+                                        const href = user?.id
                                             ? `/dashboard/prompts/${p.id}`
                                             : `/prompts/${buildSlugId(p.slug, p.id)}`;
 
