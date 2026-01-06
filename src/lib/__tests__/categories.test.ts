@@ -1,5 +1,4 @@
-import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 
 /**
  * Categories CRUD Feature - Comprehensive Test Suite
@@ -644,8 +643,6 @@ describe('Edge Cases & Error Handling', () => {
         });
 
         test('rejects category name exceeding max length', () => {
-            const tooLongName = 'A'.repeat(51);
-
             // Simulate database rejection
             const mockResult = {
                 data: null,

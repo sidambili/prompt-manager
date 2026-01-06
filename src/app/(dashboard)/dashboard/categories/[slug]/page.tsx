@@ -89,7 +89,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
                 console.error("Prompt fetch error:", promptError);
                 toast.error("Failed to fetch prompts");
             } else {
-                setPrompts((promptData ?? []) as any[]);
+                setPrompts((promptData ?? []) as CategoryDetailPrompt[]);
             }
             setIsLoading(false);
         };
