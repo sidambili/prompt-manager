@@ -1,11 +1,11 @@
 
 -- Seed Categories
 INSERT INTO public.categories (user_id, name, slug, sort_rank, is_system, is_public) VALUES 
-('00000000-0000-0000-0000-000000000000', 'Software Engineering', 'software-engineering', 10, true, false),
-('00000000-0000-0000-0000-000000000000', 'Content Creation', 'content-creation', 20, true, false),
-('00000000-0000-0000-0000-000000000000', 'Business', 'business', 30, true, false),
-('00000000-0000-0000-0000-000000000000', 'Education', 'education', 40, true, false),
-('00000000-0000-0000-0000-000000000000', 'Other', 'other', 999, true, false)
+('00000000-0000-0000-0000-000000000000', 'Software Engineering', 'software-engineering', 10, true, true),
+('00000000-0000-0000-0000-000000000000', 'Content Creation', 'content-creation', 20, true, true),
+('00000000-0000-0000-0000-000000000000', 'Business', 'business', 30, true, true),
+('00000000-0000-0000-0000-000000000000', 'Education', 'education', 40, true, true),
+('00000000-0000-0000-0000-000000000000', 'Other', 'other', 999, true, true)
 ON CONFLICT (slug) DO NOTHING;
 
 -- Seed Subcategories (Assuming IDs are generated, we subquery)
