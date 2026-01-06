@@ -77,7 +77,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
 
     it('should allow owner to read their private category', async () => {
         const slug = `private-cat-${Date.now()}`
-        const { data: inserted, error: insertErr } = await adminClient
+        const { data: inserted, error: insertErr } = await userAClient
             .from('categories')
             .insert({ name: 'Private Cat', slug, user_id: userA.id, is_public: false })
             .select('id')
@@ -96,7 +96,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
 
     it('should deny non-owner reading a private category', async () => {
         const slug = `private-cat-deny-${Date.now()}`
-        const { data: inserted, error: insertErr } = await adminClient
+        const { data: inserted, error: insertErr } = await userAClient
             .from('categories')
             .insert({ name: 'Private Cat 2', slug, user_id: userA.id, is_public: false })
             .select('id')
@@ -113,14 +113,14 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
 
     it('should allow anonymous reading a public category and its subcategories', async () => {
         const slug = `public-cat-${Date.now()}`
-        const { data: cat, error: insertCatErr } = await adminClient
+        const { data: cat, error: insertCatErr } = await userAClient
             .from('categories')
             .insert({ name: 'Public Cat', slug, user_id: userA.id, is_public: true })
             .select('id')
             .single()
         expect(insertCatErr).toBeNull()
 
-        const { data: sub, error: insertSubErr } = await adminClient
+        const { data: sub, error: insertSubErr } = await userAClient
             .from('subcategories')
             .insert({ name: 'Public Sub', slug: `public-sub-${Date.now()}`, category_id: cat!.id })
             .select('id, category_id')
@@ -144,14 +144,14 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
 
     it('should deny anonymous reading subcategories under a private category', async () => {
         const slug = `private-cat-sub-${Date.now()}`
-        const { data: cat, error: insertCatErr } = await adminClient
+        const { data: cat, error: insertCatErr } = await userAClient
             .from('categories')
             .insert({ name: 'Private Cat 3', slug, user_id: userA.id, is_public: false })
             .select('id')
             .single()
         expect(insertCatErr).toBeNull()
 
-        const { data: sub, error: insertSubErr } = await adminClient
+        const { data: sub, error: insertSubErr } = await userAClient
             .from('subcategories')
             .insert({ name: 'Private Sub', slug: `private-sub-${Date.now()}`, category_id: cat!.id })
             .select('id')
@@ -195,7 +195,7 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
         })
 
         // 2. Setup test data (Category -> Subcategory -> Prompt)
-        const { data: cat, error: catErr } = await adminClient
+        const { data: cat, error: catErr } = await userClient
             .from('categories')
             .insert({ name: 'Test Cat', slug: `test-cat-${Date.now()}`, user_id: testUser.id })
             .select()
@@ -203,7 +203,7 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
         if (catErr) throw catErr
         categoryId = cat.id
 
-        const { data: sub, error: subErr } = await adminClient
+        const { data: sub, error: subErr } = await userClient
             .from('subcategories')
             .insert({ name: 'Test Sub', slug: 'test-sub', category_id: categoryId })
             .select()
@@ -211,7 +211,7 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
         if (subErr) throw subErr
         subcategoryId = sub.id
 
-        const { data: prompt, error: promptErr } = await adminClient
+        const { data: prompt, error: promptErr } = await userClient
             .from('prompts')
             .insert({
                 title: 'Test Prompt',
@@ -228,37 +228,62 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
 
     it('should set prompt subcategory_id to null when subcategory is deleted', async () => {
         // Verify prompt has subcategory initially
-        const { data: initialPrompt } = await adminClient.from('prompts').select('subcategory_id').eq('id', promptId).single()
+        const { data: initialPrompt } = await userClient
+            .from('prompts')
+            .select('subcategory_id')
+            .eq('id', promptId)
+            .single()
         expect(initialPrompt?.subcategory_id).toBe(subcategoryId)
 
         // Delete subcategory
-        const { error: deleteErr } = await adminClient.from('subcategories').delete().eq('id', subcategoryId)
+        const { error: deleteErr } = await userClient
+            .from('subcategories')
+            .delete()
+            .eq('id', subcategoryId)
         expect(deleteErr).toBeNull()
 
         // Verify prompt subcategory_id is now null
-        const { data: updatedPrompt } = await adminClient.from('prompts').select('subcategory_id').eq('id', promptId).single()
+        const { data: updatedPrompt } = await userClient
+            .from('prompts')
+            .select('subcategory_id')
+            .eq('id', promptId)
+            .single()
         expect(updatedPrompt?.subcategory_id).toBeNull()
     })
 
     it('should set prompt subcategory_id to null when parent category is deleted (cascade)', async () => {
         // Setup new subcategory and prompt
-        const { data: sub } = await adminClient
+        const { data: sub, error: subErr } = await userClient
             .from('subcategories')
             .insert({ name: 'Test Sub 2', slug: 'test-sub-2', category_id: categoryId })
             .select()
             .single()
+
+        expect(subErr).toBeNull()
+        if (!sub) {
+            throw new Error('Failed to create subcategory for cascade test')
+        }
         
-        await adminClient
+        const { error: updateErr } = await userClient
             .from('prompts')
             .update({ subcategory_id: sub.id })
             .eq('id', promptId)
 
+        expect(updateErr).toBeNull()
+
         // Delete category (should cascade delete subcategory)
-        const { error: deleteErr } = await adminClient.from('categories').delete().eq('id', categoryId)
+        const { error: deleteErr } = await userClient
+            .from('categories')
+            .delete()
+            .eq('id', categoryId)
         expect(deleteErr).toBeNull()
 
         // Verify prompt subcategory_id is now null
-        const { data: updatedPrompt } = await adminClient.from('prompts').select('subcategory_id').eq('id', promptId).single()
+        const { data: updatedPrompt } = await userClient
+            .from('prompts')
+            .select('subcategory_id')
+            .eq('id', promptId)
+            .single()
         expect(updatedPrompt?.subcategory_id).toBeNull()
     })
 })
