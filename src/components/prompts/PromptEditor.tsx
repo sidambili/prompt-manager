@@ -64,6 +64,7 @@ const formSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   description: z.string().max(500, 'Description is too long').default(''),
   subcategory_id: z.string().nullable(),
+  category_id: z.string().nullable(),
   is_public: z.boolean().default(false),
   is_listed: z.boolean().default(true),
   tags: z.array(z.string()).max(10, 'Max 10 tags').default([]),
@@ -130,7 +131,8 @@ type PromptEditorProps = {
     is_public: boolean;
     is_listed: boolean;
     tags: string[];
-    subcategory_id: string;
+    subcategory_id: string | null;
+    category_id: string | null;
     user_id?: string;
   };
   ownerId: string;
@@ -153,6 +155,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       content: prompt.content,
       description: prompt.description || '',
       subcategory_id: prompt.subcategory_id,
+      category_id: prompt.category_id,
       is_public: prompt.is_public,
       is_listed: prompt.is_public ? prompt.is_listed : false,
       tags: prompt.tags || [],
@@ -209,7 +212,6 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
     try {
       const parsedValues = formSchema.parse(formValues);
-      const subcategoryId = parsedValues.subcategory_id === "none" ? null : parsedValues.subcategory_id;
       const normalizedVisibility = normalizeVisibility({
         is_public: parsedValues.is_public,
         is_listed: parsedValues.is_listed,
@@ -223,7 +225,8 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
         p_title: parsedValues.title,
         p_content: parsedValues.content,
         p_description: parsedValues.description,
-        p_subcategory_id: subcategoryId,
+        p_subcategory_id: parsedValues.subcategory_id,
+        p_category_id: parsedValues.category_id,
         p_is_public: normalizedVisibility.is_public,
         p_is_listed: normalizedVisibility.is_listed,
         p_tags: parsedValues.tags,

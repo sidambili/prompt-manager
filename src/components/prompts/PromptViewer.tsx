@@ -156,14 +156,16 @@ interface PromptViewerProps {
     description: string | null;
     content: string;
     slug: string;
-    subcategory_id: string;
+    subcategory_id: string | null;
+    category_id?: string | null;
     is_public: boolean;
     is_listed: boolean;
     tags: string[];
     created_at: string;
     updated_at: string;
     user_id: string;
-    subcategory: SubcategoryInfo | SubcategoryInfo[];
+    subcategory?: SubcategoryInfo | SubcategoryInfo[];
+    category?: CategoryInfo | CategoryInfo[];
   };
 }
 
@@ -280,9 +282,10 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
           title: forkTitle,
           content: prompt.content,
           description: prompt.description,
-          subcategory_id: prompt.subcategory_id,
+          subcategory_id: prompt.subcategory_id ?? null,
+          category_id: prompt.category_id ?? null,
           is_public: false,
-          is_listed: true,
+          is_listed: false,
           parent_id: prompt.id,
           slug: forkSlug,
         })
@@ -351,9 +354,12 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     ? prompt.subcategory[0]
     : prompt.subcategory;
 
-  // Handle nested aliased category
-  const categoryData = subcategory?.category || subcategory?.categories;
-  const category = Array.isArray(categoryData) ? categoryData[0] : categoryData;
+  // Direct category or derived via subcategory
+  const directCategory = Array.isArray(prompt.category) ? prompt.category[0] : prompt.category;
+  const derivedCategoryData = subcategory?.category || subcategory?.categories;
+  const derivedCategory = Array.isArray(derivedCategoryData) ? derivedCategoryData[0] : derivedCategoryData;
+  
+  const category = directCategory || derivedCategory;
   const categorySlug = (category as CategoryInfo | undefined)?.slug;
 
   const categoryIsPublic = (category as CategoryInfo | undefined)?.is_public;

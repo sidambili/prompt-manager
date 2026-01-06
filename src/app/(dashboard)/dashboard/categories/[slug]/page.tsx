@@ -97,6 +97,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
                 </div>
                 <div className="flex items-center gap-2" id="category-detail-header-actions">
                     <CreatePromptModal
+                        defaultCategoryId={category?.id}
                         trigger={
                             <Button id="category-add-prompt-btn">
                                 <Plus className="mr-2 h-4 w-4" />

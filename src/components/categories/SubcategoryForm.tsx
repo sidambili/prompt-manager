@@ -33,7 +33,7 @@ const subcategorySchema = z.object({
     sort_rank: z.number().int().default(0),
 });
 
-type SubcategoryFormValues = z.infer<typeof subcategorySchema>;
+type SubcategoryFormValues = z.input<typeof subcategorySchema>;
 
 interface Subcategory {
     id: string;
