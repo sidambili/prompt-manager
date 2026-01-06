@@ -73,7 +73,7 @@ vi.mock('@/hooks/usePromptSearch', () => {
 });
 
 describe('HeaderSearch', () => {
-  it('routes owned prompts to dashboard and other public+listed prompts to public route', () => {
+  it('routes all results to dashboard route when authenticated', () => {
     render(<HeaderSearch />);
 
     const input = document.getElementById('header-search-input');
@@ -87,7 +87,7 @@ describe('HeaderSearch', () => {
 
     const publicItem = document.getElementById('header-search-item-p-public') as HTMLAnchorElement | null;
     expect(publicItem).toBeTruthy();
-    expect(publicItem?.getAttribute('href')).toBe('/prompts/public-prompt--p-public');
+    expect(publicItem?.getAttribute('href')).toBe('/dashboard/prompts/p-public');
 
     // Ensure onChange is wired (smoke check)
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'new' } });
