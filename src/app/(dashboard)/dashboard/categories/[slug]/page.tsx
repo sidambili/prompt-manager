@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import PromptList from "@/components/prompts/PromptList";
-import { ChevronRight, Folder } from "lucide-react";
+import { ChevronRight, Folder, Plus } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
+import CreatePromptModal from "@/components/prompts/CreatePromptModal";
+import { Button } from "@/components/ui/button";
 
 interface PromptSubcategory {
     name: string;
@@ -79,18 +81,30 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
 
     return (
         <div className="space-y-6" id="category-detail-page">
-            <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1" id="category-breadcrumb">
-                    <Link href="/dashboard/categories" className="hover:text-foreground">Categories</Link>
-                    <ChevronRight className="h-4 w-4" />
-                    <span className="text-foreground font-medium">{category?.name || "..."}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4" id="category-detail-header">
+                <div className="flex flex-col gap-1" id="category-detail-header-left">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1" id="category-breadcrumb">
+                        <Link href="/dashboard/categories" className="hover:text-foreground">Categories</Link>
+                        <ChevronRight className="h-4 w-4" />
+                        <span className="text-foreground font-medium">{category?.name || "..."}</span>
+                    </div>
+                    <h1 className="text-2xl font-semibold tracking-tight" id="category-detail-title">
+                        {category?.name} Prompts
+                    </h1>
+                    <p className="text-sm text-muted-foreground" id="category-detail-desc">
+                        {prompts.length} prompts in this category.
+                    </p>
                 </div>
-                <h1 className="text-2xl font-semibold tracking-tight" id="category-detail-title">
-                    {category?.name} Prompts
-                </h1>
-                <p className="text-sm text-muted-foreground" id="category-detail-desc">
-                    {prompts.length} prompts in this category.
-                </p>
+                <div className="flex items-center gap-2" id="category-detail-header-actions">
+                    <CreatePromptModal
+                        trigger={
+                            <Button id="category-add-prompt-btn">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add New prompts
+                            </Button>
+                        }
+                    />
+                </div>
             </div>
 
             <div className="min-h-[400px]" id="category-prompts-container">
