@@ -1,19 +1,139 @@
 -- Allow prompts to belong to either a category or a subcategory
--- 1. Modify public.prompts table
-ALTER TABLE public.prompts 
-    ALTER COLUMN subcategory_id DROP NOT NULL,
-    ADD COLUMN category_id uuid REFERENCES public.categories(id) ON DELETE RESTRICT;
+
+ALTER TABLE public.categories
+    ADD COLUMN IF NOT EXISTS user_id uuid;
+
+ALTER TABLE public.categories
+    ADD COLUMN IF NOT EXISTS is_public boolean NOT NULL DEFAULT false;
+
+UPDATE public.categories
+SET user_id = '00000000-0000-0000-0000-000000000000'
+WHERE user_id IS NULL;
+
+ALTER TABLE public.categories
+    ALTER COLUMN user_id SET NOT NULL;
+
+DROP POLICY IF EXISTS "Categories are publicly readable" ON public.categories;
+DROP POLICY IF EXISTS "Authenticated users can insert categories" ON public.categories;
+DROP POLICY IF EXISTS "Authenticated users can update categories" ON public.categories;
+DROP POLICY IF EXISTS "Authenticated users can delete categories" ON public.categories;
+DROP POLICY IF EXISTS "Categories are readable if public or owner" ON public.categories;
+DROP POLICY IF EXISTS "Users can insert their own categories" ON public.categories;
+DROP POLICY IF EXISTS "Users can update their own categories" ON public.categories;
+DROP POLICY IF EXISTS "Users can delete their own categories" ON public.categories;
+
+CREATE POLICY "Categories are readable if public or owner"
+    ON public.categories FOR SELECT
+    USING (
+        is_public = true
+        OR auth.uid() = user_id
+    );
+
+CREATE POLICY "Users can insert their own categories"
+    ON public.categories FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own categories"
+    ON public.categories FOR UPDATE
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own categories"
+    ON public.categories FOR DELETE
+    USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Subcategories are publicly readable" ON public.subcategories;
+DROP POLICY IF EXISTS "Authenticated users can insert subcategories" ON public.subcategories;
+DROP POLICY IF EXISTS "Authenticated users can update subcategories" ON public.subcategories;
+DROP POLICY IF EXISTS "Authenticated users can delete subcategories" ON public.subcategories;
+DROP POLICY IF EXISTS "Subcategories are readable if parent category public or owner" ON public.subcategories;
+DROP POLICY IF EXISTS "Users can insert subcategories in their own categories" ON public.subcategories;
+DROP POLICY IF EXISTS "Users can update subcategories in their own categories" ON public.subcategories;
+DROP POLICY IF EXISTS "Users can delete subcategories in their own categories" ON public.subcategories;
+
+CREATE POLICY "Subcategories are readable if parent category public or owner"
+    ON public.subcategories FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM public.categories c
+            WHERE c.id = subcategories.category_id
+              AND (c.is_public = true OR c.user_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Users can insert subcategories in their own categories"
+    ON public.subcategories FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM public.categories c
+            WHERE c.id = subcategories.category_id
+              AND c.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can update subcategories in their own categories"
+    ON public.subcategories FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM public.categories c
+            WHERE c.id = subcategories.category_id
+              AND c.user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM public.categories c
+            WHERE c.id = subcategories.category_id
+              AND c.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Users can delete subcategories in their own categories"
+    ON public.subcategories FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM public.categories c
+            WHERE c.id = subcategories.category_id
+              AND c.user_id = auth.uid()
+        )
+    );
+
+ALTER TABLE public.prompts
+    ALTER COLUMN subcategory_id DROP NOT NULL;
+
+ALTER TABLE public.prompts
+    DROP CONSTRAINT IF EXISTS prompts_subcategory_id_fkey,
+    ADD CONSTRAINT prompts_subcategory_id_fkey
+        FOREIGN KEY (subcategory_id)
+        REFERENCES public.subcategories(id)
+        ON DELETE SET NULL;
+
+ALTER TABLE public.prompts
+    ADD COLUMN IF NOT EXISTS category_id uuid;
+
+ALTER TABLE public.prompts
+    DROP CONSTRAINT IF EXISTS prompts_category_id_fkey,
+    ADD CONSTRAINT prompts_category_id_fkey
+        FOREIGN KEY (category_id)
+        REFERENCES public.categories(id)
+        ON DELETE SET NULL;
 
 -- 2. Add constraint: at most one of category_id or subcategory_id should be set
 -- We allow both to be null for "No Collection"
 ALTER TABLE public.prompts
-    ADD CONSTRAINT prompts_collection_check 
+    DROP CONSTRAINT IF EXISTS prompts_collection_check,
+    ADD CONSTRAINT prompts_collection_check
     CHECK (
         (category_id IS NULL OR subcategory_id IS NULL)
     );
 
 -- 3. Add index for performance
-CREATE INDEX idx_prompts_category_id ON public.prompts(category_id);
+CREATE INDEX IF NOT EXISTS idx_prompts_category_id ON public.prompts(category_id);
 
 -- 4. Update the RPC to handle category_id and new change events
 CREATE OR REPLACE FUNCTION public.update_prompt_with_commit_message(

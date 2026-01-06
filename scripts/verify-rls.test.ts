@@ -169,6 +169,8 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
 describe('Data Integrity: Category and Subcategory Deletion', () => {
     let testUser: TestUser
     let userClient: SupabaseClient
+    let otherUser: TestUser
+    let otherUserClient: SupabaseClient
     let categoryId: string
     let subcategoryId: string
     let promptId: string
@@ -192,6 +194,24 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
         if (signInError) throw signInError
         userClient = createClient(supabaseUrl, supabaseKey, {
             global: { headers: { Authorization: `Bearer ${signInData.session.access_token}` } }
+        })
+
+        const otherEmail = `test_deletion_other_${Date.now()}@example.com`
+        const { data: { user: otherCreated }, error: otherCreateErr } = await adminClient.auth.admin.createUser({
+            email: otherEmail,
+            password,
+            email_confirm: true
+        })
+        if (otherCreateErr || !otherCreated) throw otherCreateErr || new Error('Failed to create other test user')
+        otherUser = otherCreated
+
+        const { data: otherSignInData, error: otherSignInError } = await adminClient.auth.signInWithPassword({
+            email: otherEmail,
+            password
+        })
+        if (otherSignInError) throw otherSignInError
+        otherUserClient = createClient(supabaseUrl, supabaseKey, {
+            global: { headers: { Authorization: `Bearer ${otherSignInData.session.access_token}` } }
         })
 
         // 2. Setup test data (Category -> Subcategory -> Prompt)
@@ -226,29 +246,68 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
         promptId = prompt.id
     })
 
-    it('should set prompt subcategory_id to null when subcategory is deleted', async () => {
-        // Verify prompt has subcategory initially
+    it('should move prompt to parent category when subcategory is deleted', async () => {
         const { data: initialPrompt } = await userClient
             .from('prompts')
-            .select('subcategory_id')
+            .select('subcategory_id, category_id')
             .eq('id', promptId)
             .single()
         expect(initialPrompt?.subcategory_id).toBe(subcategoryId)
+        expect(initialPrompt?.category_id ?? null).toBeNull()
 
-        // Delete subcategory
         const { error: deleteErr } = await userClient
-            .from('subcategories')
-            .delete()
-            .eq('id', subcategoryId)
+            .rpc('delete_subcategory_reassign_prompts', { p_subcategory_id: subcategoryId })
         expect(deleteErr).toBeNull()
 
-        // Verify prompt subcategory_id is now null
         const { data: updatedPrompt } = await userClient
             .from('prompts')
-            .select('subcategory_id')
+            .select('subcategory_id, category_id')
             .eq('id', promptId)
             .single()
-        expect(updatedPrompt?.subcategory_id).toBeNull()
+        expect(updatedPrompt?.subcategory_id ?? null).toBeNull()
+        expect(updatedPrompt?.category_id).toBe(categoryId)
+    })
+
+    it('should deny non-owner deleting a subcategory via the RPC', async () => {
+        const { data: sub, error: subErr } = await userClient
+            .from('subcategories')
+            .insert({ name: 'Other Owner Sub', slug: `other-owner-sub-${Date.now()}`, category_id: categoryId })
+            .select('id')
+            .single()
+        expect(subErr).toBeNull()
+        expect(sub?.id).toBeTruthy()
+
+        const { error: unauthorizedErr } = await otherUserClient
+            .rpc('delete_subcategory_reassign_prompts', { p_subcategory_id: sub!.id })
+        expect(unauthorizedErr).not.toBeNull()
+
+        const { data: stillThere, error: stillThereErr } = await userClient
+            .from('subcategories')
+            .select('id')
+            .eq('id', sub!.id)
+            .single()
+        expect(stillThereErr).toBeNull()
+        expect(stillThere?.id).toBe(sub!.id)
+    })
+
+    it('should delete a subcategory with no prompts assigned', async () => {
+        const { data: emptySub, error: emptySubErr } = await userClient
+            .from('subcategories')
+            .insert({ name: 'Empty Sub', slug: `empty-sub-${Date.now()}`, category_id: categoryId })
+            .select('id')
+            .single()
+        expect(emptySubErr).toBeNull()
+
+        const { error: deleteErr } = await userClient
+            .rpc('delete_subcategory_reassign_prompts', { p_subcategory_id: emptySub!.id })
+        expect(deleteErr).toBeNull()
+
+        const { data: rows, error: selectErr } = await userClient
+            .from('subcategories')
+            .select('id')
+            .eq('id', emptySub!.id)
+        expect(selectErr).toBeNull()
+        expect(rows?.length ?? 0).toBe(0)
     })
 
     it('should set prompt subcategory_id to null when parent category is deleted (cascade)', async () => {
@@ -266,7 +325,7 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
         
         const { error: updateErr } = await userClient
             .from('prompts')
-            .update({ subcategory_id: sub.id })
+            .update({ subcategory_id: sub.id, category_id: null })
             .eq('id', promptId)
 
         expect(updateErr).toBeNull()
@@ -278,12 +337,14 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
             .eq('id', categoryId)
         expect(deleteErr).toBeNull()
 
-        // Verify prompt subcategory_id is now null
+        // Verify prompt subcategory_id is now null (subcategory was cascade-deleted)
+        // and category_id is null (category deletion sets it null)
         const { data: updatedPrompt } = await userClient
             .from('prompts')
-            .select('subcategory_id')
+            .select('subcategory_id, category_id')
             .eq('id', promptId)
             .single()
         expect(updatedPrompt?.subcategory_id).toBeNull()
+        expect(updatedPrompt?.category_id ?? null).toBeNull()
     })
 })

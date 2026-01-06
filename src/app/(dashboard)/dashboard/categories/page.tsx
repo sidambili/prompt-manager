@@ -94,7 +94,9 @@ export default function CategoriesPage() {
     const handleDeleteSubcategory = async (id: string) => {
         if (!confirm("Are you sure? This may affect prompts in this subcategory.")) return;
 
-        const { error } = await supabase.from("subcategories").delete().eq("id", id);
+        const { error } = await supabase.rpc("delete_subcategory_reassign_prompts", {
+            p_subcategory_id: id,
+        });
         if (error) {
             toast.error("Failed to delete subcategory");
         } else {
