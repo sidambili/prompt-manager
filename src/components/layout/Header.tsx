@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, User, LogOut, Settings, HelpCircle, Plus } from "lucide-react";
+import { User, LogOut, Settings, HelpCircle, Plus } from "lucide-react";
 import { useAuth } from "@/components/layout/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -15,10 +15,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CreatePromptModal from "@/components/prompts/CreatePromptModal";
-
+import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 export default function Header() {
@@ -43,16 +42,7 @@ export default function Header() {
                 </div>
             </div>
 
-            <div className="flex flex-1 items-center justify-center max-w-xl px-4">
-                <div className="relative w-full group">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-brand transition-colors" />
-                    <Input
-                        type="search"
-                        placeholder="Search prompts... (⌘K)"
-                        className="w-full bg-muted/40 pl-9 h-8 text-sm border-transparent focus-visible:ring-1 focus-visible:ring-brand focus-visible:border-brand transition-all"
-                    />
-                </div>
-            </div>
+            <HeaderSearch />
 
             <div className="flex items-center gap-3">
                 <CreatePromptModal
