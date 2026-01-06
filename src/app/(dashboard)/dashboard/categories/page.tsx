@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Folder, Trash2, ChevronRight, MoreVertical, Edit2 } from "lucide-react";
+import { Plus, Search, Folder, Trash2, MoreVertical, Edit2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/layout/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,11 @@ export default function CategoriesPage() {
     };
 
     useEffect(() => {
-        fetchCategories();
+        const timeoutId = setTimeout(() => {
+            void fetchCategories();
+        }, 0);
+
+        return () => clearTimeout(timeoutId);
     }, []);
 
     const handleDeleteCategory = async (id: string) => {
