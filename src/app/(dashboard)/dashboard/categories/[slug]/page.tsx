@@ -19,15 +19,22 @@ interface PromptSubcategory {
     };
 }
 
+interface PromptCategory {
+    name: string;
+    slug: string;
+}
+
 interface CategoryDetailPrompt {
     id: string;
     title: string;
     description: string | null;
     content: string;
-    subcategory_id: string;
+    category_id: string | null;
+    subcategory_id: string | null;
     is_public: boolean;
     updated_at: string;
-    subcategories: PromptSubcategory;
+    subcategories: PromptSubcategory | null;
+    categories: PromptCategory | null;
 }
 
 interface Category {
@@ -46,11 +53,11 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
-            
-            // Fetch category details
+
+            // Fetch category details and subcategories
             const { data: catData, error: catError } = await supabase
                 .from("categories")
-                .select("id, name, slug")
+                .select("id, name, slug, subcategories(id)")
                 .eq("slug", slug)
                 .single();
 
@@ -61,17 +68,28 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
             }
             setCategory(catData);
 
-            // Fetch prompts for this category
-            const { data: promptData, error: promptError } = await supabase
+            // Build subcategory ID list
+            const subcatIds = (catData.subcategories as { id: string }[]).map(s => s.id);
+
+            // Fetch prompts for this category or its subcategories
+            let query = supabase
                 .from("prompts")
-                .select("*, subcategories!inner(name, category_id, categories!inner(name, slug))")
-                .eq("subcategories.category_id", catData.id)
+                .select("*, subcategories(name, category_id, categories(name, slug)), categories(name, slug)");
+
+            if (subcatIds.length > 0) {
+                query = query.or(`category_id.eq.${catData.id},subcategory_id.in.(${subcatIds.join(",")})`);
+            } else {
+                query = query.eq("category_id", catData.id);
+            }
+
+            const { data: promptData, error: promptError } = await query
                 .order("updated_at", { ascending: false });
 
             if (promptError) {
+                console.error("Prompt fetch error:", promptError);
                 toast.error("Failed to fetch prompts");
             } else {
-                setPrompts((promptData ?? []) as CategoryDetailPrompt[]);
+                setPrompts((promptData ?? []) as any[]);
             }
             setIsLoading(false);
         };

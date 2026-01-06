@@ -25,12 +25,15 @@ interface PromptCardProps {
         content: string;
         is_public: boolean;
         updated_at: string;
-        subcategories: {
+        subcategories?: {
             name: string;
             categories: {
                 name: string;
             };
-        };
+        } | null;
+        categories?: {
+            name: string;
+        } | null;
     };
 }
 
@@ -61,9 +64,11 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                                 {prompt.title}
                             </span>
                             <div className="flex gap-1.5 shrink-0">
-                                <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-normal border-brand-border text-brand-300 bg-brand-bg/50">
-                                    {prompt.subcategories?.name}
-                                </Badge>
+                                {(prompt.subcategories?.name || prompt.categories?.name) && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-normal border-brand-border text-brand-300 bg-brand-bg/50">
+                                        {prompt.subcategories?.name || prompt.categories?.name}
+                                    </Badge>
+                                )}
                                 <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-normal">
                                     {prompt.is_public ? "Public" : "Private"}
                                 </Badge>
@@ -101,7 +106,7 @@ export default function PromptCard({ prompt }: PromptCardProps) {
                                 <DropdownMenuItem asChild className="cursor-pointer" id={`view-details-${prompt.id}`}>
                                     <Link href={`/dashboard/prompts/${prompt.id}`}>View Details</Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                     onSelect={(e) => {
                                         e.preventDefault();
                                         navigator.clipboard.writeText(prompt.content);
