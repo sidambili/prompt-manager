@@ -73,9 +73,16 @@ export function HeaderSearch() {
                         ) : results.length > 0 ? (
                             <div className="py-1 max-h-[300px] overflow-y-auto" id="header-search-results-list">
                                 {results.map((p) => (
+                                    (() => {
+                                        const isOwned = !!user?.id && p.user_id === user.id;
+                                        const href = isOwned
+                                            ? `/dashboard/prompts/${p.id}`
+                                            : `/prompts/${buildSlugId(p.slug, p.id)}`;
+
+                                        return (
                                     <Link
                                         key={p.id}
-                                        href={`/prompts/${buildSlugId(p.slug, p.id)}`}
+                                        href={href}
                                         onClick={() => setIsFocused(false)}
                                         className="flex items-center px-4 py-2 hover:bg-muted/50 transition-colors text-sm"
                                         id={`header-search-item-${p.id}`}
@@ -113,6 +120,8 @@ export function HeaderSearch() {
                                             </span>
                                         )}
                                     </Link>
+                                        );
+                                    })()
                                 ))}
                             </div>
                         ) : (
