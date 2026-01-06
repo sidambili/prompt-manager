@@ -137,6 +137,18 @@ function PromptInline({
   );
 }
 
+interface CategoryInfo {
+  name: string;
+  slug?: string;
+  is_public?: boolean;
+}
+
+interface SubcategoryInfo {
+  name: string;
+  category?: CategoryInfo | CategoryInfo[];
+  categories?: CategoryInfo | CategoryInfo[];
+}
+
 interface PromptViewerProps {
   prompt: {
     id: string;
@@ -151,17 +163,7 @@ interface PromptViewerProps {
     created_at: string;
     updated_at: string;
     user_id: string;
-    subcategory:
-    | {
-      name: string;
-      category?: { name: string } | { name: string }[];
-      categories?: { name: string } | { name: string }[];
-    }
-    | {
-      name: string;
-      category?: { name: string } | { name: string }[];
-      categories?: { name: string } | { name: string }[];
-    }[];
+    subcategory: SubcategoryInfo | SubcategoryInfo[];
   };
 }
 
@@ -352,9 +354,9 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
   // Handle nested aliased category
   const categoryData = subcategory?.category || subcategory?.categories;
   const category = Array.isArray(categoryData) ? categoryData[0] : categoryData;
-  const categorySlug = (category as any)?.slug;
+  const categorySlug = (category as CategoryInfo | undefined)?.slug;
 
-  const categoryIsPublic = (category as { is_public?: boolean } | undefined)?.is_public;
+  const categoryIsPublic = (category as CategoryInfo | undefined)?.is_public;
   const isPublicPromptViewingPrivateCategory =
     prompt.is_public && !isOwner && categoryIsPublic === false;
 

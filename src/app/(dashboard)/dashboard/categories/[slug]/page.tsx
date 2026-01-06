@@ -8,7 +8,16 @@ import { ChevronRight, Folder } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
 
-interface Prompt {
+interface PromptSubcategory {
+    name: string;
+    category_id: string;
+    categories: {
+        name: string;
+        slug: string;
+    };
+}
+
+interface CategoryDetailPrompt {
     id: string;
     title: string;
     description: string | null;
@@ -16,12 +25,7 @@ interface Prompt {
     subcategory_id: string;
     is_public: boolean;
     updated_at: string;
-    subcategories: {
-        name: string;
-        categories: {
-            name: string;
-        };
-    };
+    subcategories: PromptSubcategory;
 }
 
 interface Category {
@@ -32,7 +36,7 @@ interface Category {
 
 export default function CategoryDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
-    const [prompts, setPrompts] = useState<Prompt[]>([]);
+    const [prompts, setPrompts] = useState<CategoryDetailPrompt[]>([]);
     const [category, setCategory] = useState<Category | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
@@ -65,7 +69,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
             if (promptError) {
                 toast.error("Failed to fetch prompts");
             } else {
-                setPrompts(promptData as any);
+                setPrompts((promptData ?? []) as CategoryDetailPrompt[]);
             }
             setIsLoading(false);
         };

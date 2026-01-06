@@ -228,19 +228,23 @@ export default function CategoriesPage() {
                                                     </Badge>
                                                     <div className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
                                                         <button 
+                                                            type="button"
                                                             className="p-0.5 hover:text-brand"
                                                             onClick={() => {
                                                                 setEditingSubcategory(sub);
                                                                 setIsSubcategoryModalOpen(true);
                                                             }}
                                                             disabled={user?.id !== category.user_id}
+                                                            id={`edit-subcategory-btn-${sub.id}`}
                                                         >
                                                             <Edit2 className="h-2.5 w-2.5" />
                                                         </button>
                                                         <button 
+                                                            type="button"
                                                             className="p-0.5 hover:text-destructive"
                                                             onClick={() => handleDeleteSubcategory(sub.id)}
                                                             disabled={user?.id !== category.user_id}
+                                                            id={`delete-subcategory-btn-${sub.id}`}
                                                         >
                                                             <Trash2 className="h-2.5 w-2.5" />
                                                         </button>

@@ -21,9 +21,14 @@ assertEnvVar('SUPABASE_SERVICE_ROLE_KEY', serviceRoleKey)
 
 const adminClient = createClient(supabaseUrl, serviceRoleKey)
 
+interface TestUser {
+    id: string;
+    email?: string;
+}
+
 describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
-    let userA: any
-    let userB: any
+    let userA: TestUser
+    let userB: TestUser
     let userAClient: SupabaseClient
     let userBClient: SupabaseClient
     let anonClient: SupabaseClient
@@ -162,7 +167,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
     })
 })
 describe('Data Integrity: Category and Subcategory Deletion', () => {
-    let testUser: any
+    let testUser: TestUser
     let userClient: SupabaseClient
     let categoryId: string
     let subcategoryId: string

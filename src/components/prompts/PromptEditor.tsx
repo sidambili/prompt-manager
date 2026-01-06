@@ -451,12 +451,12 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
                 <TabsContent
                   value="preview"
-                  className="mt-0 ring-offset-background focus-visible:outline-none"
+                  className="mt-0 ring-offset-background focus-visible:outline-none overflow-visible"
                   id="pane-preview"
                 >
-                  <ScrollArea
-                    className="min-h-[500px] max-h-[700px] rounded-xl border bg-muted/30 p-6"
-                    id="preview-view-scroll"
+                  <div
+                    className="min-h-[500px] rounded-xl border bg-muted/30 p-6"
+                    id="preview-view-content"
                   >
                     <pre
                       className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/90"
@@ -468,7 +468,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                         </span>
                       )}
                     </pre>
-                  </ScrollArea>
+                  </div>
                   <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3" id="preview-footer">
                     <div className="text-[11px] text-muted-foreground" id="preview-stats">
                       Filled with{' '}
