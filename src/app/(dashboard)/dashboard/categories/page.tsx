@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Search, Folder, Trash2, ChevronRight, MoreVertical, Edit2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/layout/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,6 +38,8 @@ interface Category {
     name: string;
     slug: string;
     sort_rank: number;
+    is_public: boolean;
+    user_id: string;
     subcategories: Subcategory[];
 }
 
@@ -51,6 +54,7 @@ export default function CategoriesPage() {
     const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
 
     const supabase = createClient();
+    const { user } = useAuth();
 
     const fetchCategories = async () => {
         setIsLoading(true);
@@ -172,18 +176,26 @@ export default function CategoriesPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => {
-                                                setEditingCategory(category);
-                                                setIsCategoryModalOpen(true);
-                                            }}>
-                                                <Edit2 className="mr-2 h-4 w-4" /> Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                                className="text-destructive"
-                                                onClick={() => handleDeleteCategory(category.id)}
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                            </DropdownMenuItem>
+                                            {user?.id === category.user_id ? (
+                                                <>
+                                                    <DropdownMenuItem onClick={() => {
+                                                        setEditingCategory(category);
+                                                        setIsCategoryModalOpen(true);
+                                                    }}>
+                                                        <Edit2 className="mr-2 h-4 w-4" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem 
+                                                        className="text-destructive"
+                                                        onClick={() => handleDeleteCategory(category.id)}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                    </DropdownMenuItem>
+                                                </>
+                                            ) : (
+                                                <DropdownMenuItem disabled>
+                                                    Read-only
+                                                </DropdownMenuItem>
+                                            )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
@@ -202,6 +214,7 @@ export default function CategoriesPage() {
                                                 setEditingSubcategory(null);
                                                 setIsSubcategoryModalOpen(true);
                                             }}
+                                            disabled={user?.id !== category.user_id}
                                         >
                                             <Plus className="mr-1 h-3 w-3" /> Add
                                         </Button>
@@ -220,12 +233,14 @@ export default function CategoriesPage() {
                                                                 setEditingSubcategory(sub);
                                                                 setIsSubcategoryModalOpen(true);
                                                             }}
+                                                            disabled={user?.id !== category.user_id}
                                                         >
                                                             <Edit2 className="h-2.5 w-2.5" />
                                                         </button>
                                                         <button 
                                                             className="p-0.5 hover:text-destructive"
                                                             onClick={() => handleDeleteSubcategory(sub.id)}
+                                                            disabled={user?.id !== category.user_id}
                                                         >
                                                             <Trash2 className="h-2.5 w-2.5" />
                                                         </button>

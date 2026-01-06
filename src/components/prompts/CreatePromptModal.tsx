@@ -56,6 +56,7 @@ const formSchema = z.object({
 interface Category {
     id: string;
     name: string;
+    is_public: boolean;
     subcategories: { id: string; name: string }[];
 }
 
@@ -137,7 +138,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
             const fetchCategories = async () => {
                 const { data } = await supabase
                     .from("categories")
-                    .select("id, name, subcategories(id, name)")
+                    .select("id, name, is_public, subcategories(id, name)")
                     .order("sort_rank", { ascending: true });
 
                 if (!data) return;
@@ -146,6 +147,17 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
             fetchCategories();
         }
     }, [open, supabase]);
+
+    const selectedSubcategoryId = form.watch("subcategory_id");
+    const selectedCategory = useMemo(() => {
+        if (!selectedSubcategoryId || selectedSubcategoryId === "none") return null;
+
+        return (
+            categories.find((cat) =>
+                cat.subcategories.some((sub) => sub.id === selectedSubcategoryId)
+            ) ?? null
+        );
+    }, [categories, selectedSubcategoryId]);
 
     async function onSubmit(values: CreatePromptFormValues) {
         if (!user) return;
@@ -304,6 +316,29 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+                                                {selectedCategory && (
+                                                    <div
+                                                        className={cn(
+                                                            "mt-2 rounded-sm border px-3 py-2 text-xs",
+                                                            selectedCategory.is_public
+                                                                ? "border-brand/30 bg-brand/5 text-brand"
+                                                                : "border-border bg-muted/30 text-muted-foreground"
+                                                        )}
+                                                        id="create-prompt-collection-visibility"
+                                                    >
+                                                        <span className="font-medium" id="create-prompt-collection-visibility-title">
+                                                            Collection visibility:
+                                                        </span>{" "}
+                                                        <span id="create-prompt-collection-visibility-value">
+                                                            {selectedCategory.is_public ? "Public" : "Private"}
+                                                        </span>
+                                                        {isPublic && !selectedCategory.is_public && (
+                                                            <div className="mt-1 text-xs text-destructive" id="create-prompt-collection-visibility-warning">
+                                                                This prompt is public, but the selected collection is private. Category/subcategory labels will be hidden on public pages.
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <FormMessage className="text-[10px]" />
                                             </FormItem>
                                         )}

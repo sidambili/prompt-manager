@@ -77,6 +77,7 @@ type PromptEditorFormValues = z.input<typeof formSchema>;
 interface Category {
   id: string;
   name: string;
+  is_public: boolean;
   subcategories: { id: string; name: string }[];
 }
 
@@ -193,7 +194,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       setIsLoading(true);
       const { data } = await supabase
         .from('categories')
-        .select('id, name, subcategories(id, name)')
+        .select('id, name, is_public, subcategories(id, name)')
         .order('sort_rank', { ascending: true });
       if (data) {
         setCategories(data as unknown as Category[]);

@@ -6,23 +6,10 @@ import { Clock, Globe } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { buildSlugId } from "@/lib/slug";
+import type { PublicPrompt } from "@/components/prompts/PublicPromptList";
 
 type PublicPromptCardProps = {
-    prompt: {
-        id: string;
-        title: string;
-        description: string | null;
-        slug: string;
-        updated_at: string;
-        subcategory: {
-            id: string;
-            name: string;
-            categories: {
-                id: string;
-                name: string;
-            };
-        };
-    };
+    prompt: PublicPrompt;
 };
 
 export default function PublicPromptCard({ prompt }: PublicPromptCardProps) {
@@ -41,13 +28,15 @@ export default function PublicPromptCard({ prompt }: PublicPromptCardProps) {
                                 {prompt.title}
                             </span>
                             <div className="flex gap-1.5 shrink-0" id={`public-prompt-card-badges-${prompt.id}`}>
-                                <Badge
-                                    variant="outline"
-                                    className="text-[10px] h-4 px-1.5 font-normal border-brand-border text-brand-300 bg-brand-bg/50"
-                                    id={`public-prompt-subcategory-${prompt.id}`}
-                                >
-                                    {prompt.subcategory?.name}
-                                </Badge>
+                                {prompt.subcategory?.categories?.is_public ? (
+                                    <Badge
+                                        variant="outline"
+                                        className="text-[10px] h-4 px-1.5 font-normal border-brand-border text-brand-300 bg-brand-bg/50"
+                                        id={`public-prompt-subcategory-${prompt.id}`}
+                                    >
+                                        {prompt.subcategory?.name}
+                                    </Badge>
+                                ) : null}
                                 <Badge
                                     variant="outline"
                                     className="text-[10px] h-4 px-1.5 font-normal"

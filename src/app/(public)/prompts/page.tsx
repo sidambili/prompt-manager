@@ -17,7 +17,7 @@ export default async function PublicPromptsPage({
     let query = supabase
         .from("prompts")
         .select(
-            "id, title, description, slug, updated_at, subcategory:subcategories(id, name, categories(id, name))"
+            "id, title, description, slug, updated_at, subcategory:subcategories(id, name, categories(id, name, is_public))"
         )
         .eq("is_public", true)
         .eq("is_listed", true)

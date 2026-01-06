@@ -14,8 +14,9 @@ export type PublicPrompt = {
         categories: {
             id: string;
             name: string;
+            is_public: boolean;
         };
-    };
+    } | null;
 };
 
 type PublicPromptListProps = {

@@ -24,6 +24,7 @@ export default async function PublicPromptsLayout({
     const { data: categories } = await supabase
         .from("categories")
         .select("id, name, subcategories(id, name)")
+        .eq("is_public", true)
         .order("sort_rank", { ascending: true });
 
     const typedCategories = (categories ?? []) as PublicCategory[];

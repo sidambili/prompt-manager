@@ -71,7 +71,7 @@ export default async function PromptPage({ params }: Props) {
       user_id,
       subcategory:subcategories!prompts_subcategory_id_fkey(
         name,
-        categories(name)
+        categories(name, is_public)
       )
     `)
     .eq('id', parsed.id)

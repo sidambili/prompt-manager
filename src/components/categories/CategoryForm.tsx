@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/layout/AuthProvider";
 import {
     Dialog,
     DialogContent,
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { slugify as generateSlug } from "@/lib/slug";
 
@@ -30,15 +32,17 @@ const categorySchema = z.object({
     name: z.string().min(1, "Name is required").max(50),
     slug: z.string().min(1, "Slug is required").max(50),
     sort_rank: z.number().int().default(0),
+    is_public: z.boolean().default(false),
 });
 
-type CategoryFormValues = z.infer<typeof categorySchema>;
+type CategoryFormValues = z.input<typeof categorySchema>;
 
 interface Category {
     id: string;
     name: string;
     slug: string;
     sort_rank: number;
+    is_public: boolean;
 }
 
 interface CategoryFormProps {
@@ -56,6 +60,7 @@ export default function CategoryForm({
 }: CategoryFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const supabase = createClient();
+    const { user } = useAuth();
 
     const form = useForm<CategoryFormValues>({
         resolver: zodResolver(categorySchema),
@@ -63,6 +68,7 @@ export default function CategoryForm({
             name: "",
             slug: "",
             sort_rank: 0,
+            is_public: false,
         },
     });
 
@@ -73,12 +79,14 @@ export default function CategoryForm({
                     name: editingCategory.name,
                     slug: editingCategory.slug,
                     sort_rank: editingCategory.sort_rank,
+                    is_public: editingCategory.is_public,
                 });
             } else {
                 form.reset({
                     name: "",
                     slug: "",
                     sort_rank: 0,
+                    is_public: false,
                 });
             }
         }
@@ -87,18 +95,22 @@ export default function CategoryForm({
     const onSubmit = async (values: CategoryFormValues) => {
         setIsLoading(true);
         try {
+            const parsedValues = categorySchema.parse(values);
             if (editingCategory) {
                 const { error } = await supabase
                     .from("categories")
-                    .update(values)
+                    .update(parsedValues)
                     .eq("id", editingCategory.id);
 
                 if (error) throw error;
                 toast.success("Category updated successfully");
             } else {
+                if (!user) {
+                    throw new Error("You must be signed in to create a category");
+                }
                 const { error } = await supabase
                     .from("categories")
-                    .insert([values]);
+                    .insert([{ ...parsedValues, user_id: user.id }]);
 
                 if (error) throw error;
                 toast.success("Category created successfully");
@@ -184,6 +196,30 @@ export default function CategoryForm({
                                         />
                                     </FormControl>
                                     <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="is_public"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between gap-4" id="category-public-toggle">
+                                    <div className="space-y-1" id="category-public-copy">
+                                        <FormLabel className="text-sm font-medium" id="category-public-label">
+                                            Public
+                                        </FormLabel>
+                                        <div className="text-xs text-muted-foreground" id="category-public-hint">
+                                            Public categories are visible in public browsing.
+                                        </div>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value ?? false}
+                                            onCheckedChange={field.onChange}
+                                            id="category-public-switch"
+                                        />
+                                    </FormControl>
                                 </FormItem>
                             )}
                         />

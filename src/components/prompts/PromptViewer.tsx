@@ -354,6 +354,10 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
   const category = Array.isArray(categoryData) ? categoryData[0] : categoryData;
   const categorySlug = (category as any)?.slug;
 
+  const categoryIsPublic = (category as { is_public?: boolean } | undefined)?.is_public;
+  const isPublicPromptViewingPrivateCategory =
+    prompt.is_public && !isOwner && categoryIsPublic === false;
+
   return (
     <div
       className="flex flex-col bg-background selection:bg-brand-bg selection:text-brand"
@@ -375,7 +379,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               Library
             </Link>
             <span id="breadcrumb-sep-1">/</span>
-            {category ? (
+            {category && !isPublicPromptViewingPrivateCategory ? (
               <Link
                 href={`/dashboard/categories/${categorySlug}`}
                 className="hover:text-foreground transition-colors"
@@ -388,8 +392,12 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                 No Category
               </span>
             )}
-            <span id="breadcrumb-sep-2">/</span>
-            <span className="text-foreground" id="breadcrumb-subcategory">{subcategory?.name}</span>
+            {!isPublicPromptViewingPrivateCategory && subcategory?.name ? (
+              <>
+                <span id="breadcrumb-sep-2">/</span>
+                <span className="text-foreground" id="breadcrumb-subcategory">{subcategory?.name}</span>
+              </>
+            ) : null}
           </div>
             <h1
             className="text-2xl font-bold tracking-tight text-foreground"
@@ -696,20 +704,20 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   <span className="text-[10px] text-muted-foreground uppercase font-semibold" id="label-classification">
                     Classification
                   </span>
-                  <div className="flex flex-wrap gap-1.5" id="classification-badges">
+                  <div className="flex items-center gap-2" id="prompt-tags">
                     <Badge
                       variant="secondary"
                       className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
                       id="badge-cat"
                     >
-                      {category?.name}
+                      {isPublicPromptViewingPrivateCategory ? null : category?.name}
                     </Badge>
                     <Badge
                       variant="secondary"
                       className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
                       id="badge-sub"
                     >
-                      {subcategory?.name}
+                      {isPublicPromptViewingPrivateCategory ? null : subcategory?.name}
                     </Badge>
                   </div>
                 </div>

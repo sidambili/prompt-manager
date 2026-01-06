@@ -25,6 +25,7 @@ import { normalizeVisibility } from "@/lib/visibility";
 interface Category {
     id: string;
     name: string;
+    is_public: boolean;
     subcategories: { id: string; name: string }[];
 }
 
@@ -35,6 +36,17 @@ interface PromptSettingsProps {
 
 export function PromptSettings({ categories, isLoading }: PromptSettingsProps) {
     const form = useFormContext();
+
+    const watchedIsPublic = Boolean(form.watch("is_public"));
+    const selectedSubcategoryId = form.watch("subcategory_id") as string | null;
+    const selectedCategory = (() => {
+        if (!selectedSubcategoryId || selectedSubcategoryId === "none") return null;
+        return (
+            categories.find((cat) =>
+                cat.subcategories.some((sub) => sub.id === selectedSubcategoryId)
+            ) ?? null
+        );
+    })();
 
     return (
         <div className="space-y-6">
@@ -73,6 +85,25 @@ export function PromptSettings({ categories, isLoading }: PromptSettingsProps) {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {selectedCategory && (
+                                    <div
+                                        className={cn(
+                                            "mt-2 rounded-sm border px-2 py-2 text-[11px]",
+                                            selectedCategory.is_public
+                                                ? "border-brand/30 bg-brand/5 text-brand"
+                                                : "border-border bg-muted/30 text-muted-foreground"
+                                        )}
+                                        id="edit-prompt-collection-visibility"
+                                    >
+                                        <span className="font-semibold" id="edit-prompt-collection-visibility-title">Collection:</span>{" "}
+                                        <span id="edit-prompt-collection-visibility-value">{selectedCategory.is_public ? "Public" : "Private"}</span>
+                                        {watchedIsPublic && !selectedCategory.is_public && (
+                                            <div className="mt-1 text-[11px] text-destructive" id="edit-prompt-collection-visibility-warning">
+                                                This prompt is public, but the selected collection is private. Category/subcategory labels will be hidden on public pages.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 <FormMessage />
                             </FormItem>
                         )}
