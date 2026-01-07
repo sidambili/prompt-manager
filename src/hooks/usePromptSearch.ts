@@ -39,6 +39,15 @@ export function usePromptSearch({
     const debounceHandleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const requestIdRef = useRef(0);
 
+    useEffect(() => {
+        return () => {
+            if (debounceHandleRef.current) {
+                clearTimeout(debounceHandleRef.current);
+            }
+            requestIdRef.current += 1;
+        };
+    }, []);
+
     const handleSearch = (newQuery: string) => {
         setQuery(newQuery);
 
@@ -46,6 +55,7 @@ export function usePromptSearch({
 
         if (!q) {
             if (debounceHandleRef.current) clearTimeout(debounceHandleRef.current);
+            requestIdRef.current += 1;
             setResults([]);
             setIsLoading(false);
             return;
@@ -57,6 +67,7 @@ export function usePromptSearch({
 
         debounceHandleRef.current = setTimeout(async () => {
             if (!supabase) {
+                if (requestId !== requestIdRef.current) return;
                 setResults([]);
                 setIsLoading(false);
                 return;
@@ -92,7 +103,6 @@ export function usePromptSearch({
             if (requestId !== requestIdRef.current) return;
 
             if (error || !data) {
-                console.error("Search error:", error);
                 setResults([]);
             } else {
                 setResults(data as PromptSearchResult[]);

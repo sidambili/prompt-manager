@@ -122,3 +122,5 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 ## License
 
 PromptManager is open-source software licensed under the [MIT License](LICENSE).
+
+> If this project saves you time or helps your workflow, consider **starring** it so others can find it too.
