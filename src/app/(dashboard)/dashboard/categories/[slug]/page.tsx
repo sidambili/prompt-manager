@@ -43,6 +43,11 @@ interface Category {
     slug: string;
 }
 
+/**
+ * Category detail page displaying all prompts assigned to a category or its subcategories
+ * @param {{ params: Promise<{ slug: string }> }} props - Page params containing category slug
+ * @returns {JSX.Element} Category detail page with prompt list
+ */
 export default function CategoryDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
     const [prompts, setPrompts] = useState<CategoryDetailPrompt[]>([]);

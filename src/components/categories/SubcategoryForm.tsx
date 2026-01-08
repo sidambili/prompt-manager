@@ -51,6 +51,11 @@ interface SubcategoryFormProps {
     editingSubcategory: Subcategory | null;
 }
 
+/**
+ * Modal form for creating and editing subcategories
+ * @param {SubcategoryFormProps} props - Component props including open state, callbacks, parent category ID, and editing data
+ * @returns {JSX.Element} Dialog component with subcategory form
+ */
 export default function SubcategoryForm({
     isOpen,
     onClose,

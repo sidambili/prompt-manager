@@ -52,6 +52,11 @@ interface CategoryFormProps {
     editingCategory: Category | null;
 }
 
+/**
+ * Modal form for creating and editing categories
+ * @param {CategoryFormProps} props - Component props including open state, callbacks, and editing data
+ * @returns {JSX.Element} Dialog component with category form
+ */
 export default function CategoryForm({
     isOpen,
     onClose,

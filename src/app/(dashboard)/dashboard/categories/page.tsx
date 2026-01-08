@@ -43,6 +43,11 @@ interface Category {
     subcategories: Subcategory[];
 }
 
+/**
+ * Dashboard page for managing categories and subcategories
+ * Provides CRUD operations with search, create, edit, and delete functionality
+ * @returns {JSX.Element} Categories management page with grid layout
+ */
 export default function CategoriesPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
