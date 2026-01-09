@@ -18,17 +18,21 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-assertEnvVar('NEXT_PUBLIC_SUPABASE_URL', supabaseUrl)
-assertEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY', supabaseKey)
-assertEnvVar('SUPABASE_SERVICE_ROLE_KEY', serviceRoleKey)
+let adminClient: SupabaseClient | null = null
 
-const adminClient = createClient(supabaseUrl, serviceRoleKey)
+if (runRlsTests) {
+    assertEnvVar('NEXT_PUBLIC_SUPABASE_URL', supabaseUrl)
+    assertEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY', supabaseKey)
+    assertEnvVar('SUPABASE_SERVICE_ROLE_KEY', serviceRoleKey)
+
+    adminClient! = createClient(supabaseUrl!, serviceRoleKey!)
+}
 
 async function cleanupRlsTestArtifacts(): Promise<void> {
     const categorySlugFilter = 'slug.like.private-cat-%,slug.like.private-cat-deny-%,slug.like.private-cat-sub-%,slug.like.public-cat-%'
     const subcategorySlugFilter = 'slug.like.public-sub-%,slug.like.private-sub-%'
 
-    const { error: deleteSubErr } = await adminClient
+    const { error: deleteSubErr } = await adminClient!
         .from('subcategories')
         .delete()
         .or(subcategorySlugFilter)
@@ -36,7 +40,7 @@ async function cleanupRlsTestArtifacts(): Promise<void> {
         console.warn('[Cleanup] Failed pre-sweep delete for subcategories:', deleteSubErr.message)
     }
 
-    const { error: deleteCatErr } = await adminClient
+    const { error: deleteCatErr } = await adminClient!
         .from('categories')
         .delete()
         .or(categorySlugFilter)
@@ -54,7 +58,7 @@ async function cleanupRlsTestArtifacts(): Promise<void> {
     const pageSize = 100
     let page = 1
     for (;;) {
-        const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: pageSize })
+        const { data, error } = await adminClient!.auth.admin.listUsers({ page, perPage: pageSize })
         if (error) {
             console.warn('[Cleanup] Failed to list users for pre-sweep cleanup:', error.message)
             break
@@ -68,7 +72,7 @@ async function cleanupRlsTestArtifacts(): Promise<void> {
             const shouldDelete = emailPrefixes.some((prefix) => email.startsWith(prefix))
             if (!shouldDelete) continue
 
-            const { error: deleteUserErr } = await adminClient.auth.admin.deleteUser(user.id)
+            const { error: deleteUserErr } = await adminClient!.auth.admin.deleteUser(user.id)
             if (deleteUserErr) {
                 console.warn(`[Cleanup] Failed to delete test user ${email}:`, deleteUserErr.message)
             }
@@ -103,7 +107,7 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
         const password = 'TestPassword123!'
 
         const emailA = `test_visibility_a_${Date.now()}@example.com`
-        const { data: { user: createdA }, error: createAErr } = await adminClient.auth.admin.createUser({
+        const { data: { user: createdA }, error: createAErr } = await adminClient!.auth.admin.createUser({
             email: emailA,
             password,
             email_confirm: true
@@ -111,17 +115,17 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
         if (createAErr || !createdA) throw createAErr || new Error('Failed to create user A')
         userA = createdA
 
-        const { data: signInA, error: signInAErr } = await adminClient.auth.signInWithPassword({
+        const { data: signInA, error: signInAErr } = await adminClient!.auth.signInWithPassword({
             email: emailA,
             password
         })
         if (signInAErr) throw signInAErr
-        userAClient = createClient(supabaseUrl, supabaseKey, {
+        userAClient = createClient(supabaseUrl!, supabaseKey!, {
             global: { headers: { Authorization: `Bearer ${signInA.session.access_token}` } }
         })
 
         const emailB = `test_visibility_b_${Date.now()}@example.com`
-        const { data: { user: createdB }, error: createBErr } = await adminClient.auth.admin.createUser({
+        const { data: { user: createdB }, error: createBErr } = await adminClient!.auth.admin.createUser({
             email: emailB,
             password,
             email_confirm: true
@@ -129,23 +133,23 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
         if (createBErr || !createdB) throw createBErr || new Error('Failed to create user B')
         userB = createdB
 
-        const { data: signInB, error: signInBErr } = await adminClient.auth.signInWithPassword({
+        const { data: signInB, error: signInBErr } = await adminClient!.auth.signInWithPassword({
             email: emailB,
             password
         })
         if (signInBErr) throw signInBErr
-        userBClient = createClient(supabaseUrl, supabaseKey, {
+        userBClient = createClient(supabaseUrl!, supabaseKey!, {
             global: { headers: { Authorization: `Bearer ${signInB.session.access_token}` } }
         })
 
-        anonClient = createClient(supabaseUrl, supabaseKey)
+        anonClient = createClient(supabaseUrl!, supabaseKey!)
     })
 
     afterAll(async () => {
         try {
             console.log(`[Cleanup] Deleting any remaining subcategories...`)
             for (const subId of createdSubcategoryIds) {
-                const { data: deletedSubcategories, error } = await adminClient
+                const { data: deletedSubcategories, error } = await adminClient!
                     .from('subcategories')
                     .delete()
                     .eq('id', subId)
@@ -163,7 +167,7 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
 
             console.log(`[Cleanup] Deleting ${createdCategoryIds.length} categories (will cascade to subcategories)...`)
             for (const catId of createdCategoryIds) {
-                const { data: deletedCategories, error } = await adminClient
+                const { data: deletedCategories, error } = await adminClient!
                     .from('categories')
                     .delete()
                     .eq('id', catId)
@@ -179,7 +183,7 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
                 }
             }
 
-            const { data: leftoverCategories, error: leftoverCategoriesErr } = await adminClient
+            const { data: leftoverCategories, error: leftoverCategoriesErr } = await adminClient!
                 .from('categories')
                 .select('id, slug')
                 .or('slug.like.private-cat-%,slug.like.private-cat-deny-%,slug.like.private-cat-sub-%,slug.like.public-cat-%')
@@ -187,7 +191,7 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
                 console.warn('[Cleanup] Failed to list leftover categories:', leftoverCategoriesErr.message)
             } else if ((leftoverCategories?.length ?? 0) > 0) {
                 console.warn(`[Cleanup] Found leftover categories: ${leftoverCategories?.map((c) => c.slug).join(', ')}`)
-                const { error: sweepErr } = await adminClient
+                const { error: sweepErr } = await adminClient!
                     .from('categories')
                     .delete()
                     .or('slug.like.private-cat-%,slug.like.private-cat-deny-%,slug.like.private-cat-sub-%,slug.like.public-cat-%')
@@ -196,7 +200,7 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
                 }
             }
 
-            const { data: leftoverSubcategories, error: leftoverSubcategoriesErr } = await adminClient
+            const { data: leftoverSubcategories, error: leftoverSubcategoriesErr } = await adminClient!
                 .from('subcategories')
                 .select('id, slug')
                 .or('slug.like.public-sub-%,slug.like.private-sub-%')
@@ -204,7 +208,7 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
                 console.warn('[Cleanup] Failed to list leftover subcategories:', leftoverSubcategoriesErr.message)
             } else if ((leftoverSubcategories?.length ?? 0) > 0) {
                 console.warn(`[Cleanup] Found leftover subcategories: ${leftoverSubcategories?.map((s) => s.slug).join(', ')}`)
-                const { error: sweepSubErr } = await adminClient
+                const { error: sweepSubErr } = await adminClient!
                     .from('subcategories')
                     .delete()
                     .or('slug.like.public-sub-%,slug.like.private-sub-%')
@@ -214,12 +218,12 @@ describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
             }
 
             if (userA?.id) {
-                const { error } = await adminClient.auth.admin.deleteUser(userA.id)
+                const { error } = await adminClient!.auth.admin.deleteUser(userA.id)
                 if (error) console.warn('[Cleanup] Failed to delete User A:', error.message)
                 else console.log('[Cleanup] Deleted User A')
             }
             if (userB?.id) {
-                const { error } = await adminClient.auth.admin.deleteUser(userB.id)
+                const { error } = await adminClient!.auth.admin.deleteUser(userB.id)
                 if (error) console.warn('[Cleanup] Failed to delete User B:', error.message)
                 else console.log('[Cleanup] Deleted User B')
             }
@@ -342,7 +346,7 @@ describeRls('Data Integrity: Category and Subcategory Deletion', () => {
         // 1. Create a test user
         const email = `test_deletion_${Date.now()}@example.com`
         const password = 'TestPassword123!'
-        const { data: { user }, error: signUpError } = await adminClient.auth.admin.createUser({
+        const { data: { user }, error: signUpError } = await adminClient!.auth.admin.createUser({
             email,
             password,
             email_confirm: true
@@ -350,17 +354,17 @@ describeRls('Data Integrity: Category and Subcategory Deletion', () => {
         if (signUpError || !user) throw signUpError || new Error('Failed to create test user')
         testUser = user
 
-        const { data: signInData, error: signInError } = await adminClient.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await adminClient!.auth.signInWithPassword({
             email,
             password
         })
         if (signInError) throw signInError
-        userClient = createClient(supabaseUrl, supabaseKey, {
+        userClient = createClient(supabaseUrl!, supabaseKey!, {
             global: { headers: { Authorization: `Bearer ${signInData.session.access_token}` } }
         })
 
         const otherEmail = `test_deletion_other_${Date.now()}@example.com`
-        const { data: { user: otherCreated }, error: otherCreateErr } = await adminClient.auth.admin.createUser({
+        const { data: { user: otherCreated }, error: otherCreateErr } = await adminClient!.auth.admin.createUser({
             email: otherEmail,
             password,
             email_confirm: true
@@ -368,12 +372,12 @@ describeRls('Data Integrity: Category and Subcategory Deletion', () => {
         if (otherCreateErr || !otherCreated) throw otherCreateErr || new Error('Failed to create other test user')
         otherUser = otherCreated
 
-        const { data: otherSignInData, error: otherSignInError } = await adminClient.auth.signInWithPassword({
+        const { data: otherSignInData, error: otherSignInError } = await adminClient!.auth.signInWithPassword({
             email: otherEmail,
             password
         })
         if (otherSignInError) throw otherSignInError
-        otherUserClient = createClient(supabaseUrl, supabaseKey, {
+        otherUserClient = createClient(supabaseUrl!, supabaseKey!, {
             global: { headers: { Authorization: `Bearer ${otherSignInData.session.access_token}` } }
         })
 
@@ -413,29 +417,29 @@ describeRls('Data Integrity: Category and Subcategory Deletion', () => {
         try {
             console.log(`[Cleanup] Deleting ${additionalSubcategoryIds.length} additional subcategories...`)
             for (const subId of additionalSubcategoryIds) {
-                const { error } = await adminClient.from('subcategories').delete().eq('id', subId)
+                const { error } = await adminClient!.from('subcategories').delete().eq('id', subId)
                 if (error) {
                     console.warn(`[Cleanup] Failed to delete subcategory ${subId}:`, error.message)
                 }
             }
             if (promptId) {
-                const { error } = await adminClient.from('prompts').delete().eq('id', promptId)
+                const { error } = await adminClient!.from('prompts').delete().eq('id', promptId)
                 if (error) console.warn(`[Cleanup] Failed to delete prompt ${promptId}:`, error.message)
             }
             if (subcategoryId) {
-                const { error } = await adminClient.from('subcategories').delete().eq('id', subcategoryId)
+                const { error } = await adminClient!.from('subcategories').delete().eq('id', subcategoryId)
                 if (error) console.warn(`[Cleanup] Failed to delete subcategory ${subcategoryId}:`, error.message)
             }
             if (categoryId) {
-                const { error } = await adminClient.from('categories').delete().eq('id', categoryId)
+                const { error } = await adminClient!.from('categories').delete().eq('id', categoryId)
                 if (error) console.warn(`[Cleanup] Failed to delete category ${categoryId}:`, error.message)
             }
             if (testUser?.id) {
-                const { error } = await adminClient.auth.admin.deleteUser(testUser.id)
+                const { error } = await adminClient!.auth.admin.deleteUser(testUser.id)
                 if (error) console.warn('[Cleanup] Failed to delete test user:', error.message)
             }
             if (otherUser?.id) {
-                const { error } = await adminClient.auth.admin.deleteUser(otherUser.id)
+                const { error } = await adminClient!.auth.admin.deleteUser(otherUser.id)
                 if (error) console.warn('[Cleanup] Failed to delete other user:', error.message)
             }
             console.log('[Cleanup] Second test suite cleanup complete')
