@@ -38,6 +38,7 @@ export default async function EditPromptPage({ params }: Props) {
       is_listed,
       tags,
       subcategory_id,
+      category_id,
       user_id
     `)
     .eq('id', parsed.id)

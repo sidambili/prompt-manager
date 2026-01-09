@@ -63,7 +63,8 @@ const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
   content: z.string().min(1, 'Content is required'),
   description: z.string().max(500, 'Description is too long').default(''),
-  subcategory_id: z.string().min(1, 'Category is required'),
+  subcategory_id: z.string().nullable(),
+  category_id: z.string().nullable(),
   is_public: z.boolean().default(false),
   is_listed: z.boolean().default(true),
   tags: z.array(z.string()).max(10, 'Max 10 tags').default([]),
@@ -77,6 +78,7 @@ type PromptEditorFormValues = z.input<typeof formSchema>;
 interface Category {
   id: string;
   name: string;
+  is_public: boolean;
   subcategories: { id: string; name: string }[];
 }
 
@@ -129,7 +131,8 @@ type PromptEditorProps = {
     is_public: boolean;
     is_listed: boolean;
     tags: string[];
-    subcategory_id: string;
+    subcategory_id: string | null;
+    category_id: string | null;
     user_id?: string;
   };
   ownerId: string;
@@ -152,6 +155,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       content: prompt.content,
       description: prompt.description || '',
       subcategory_id: prompt.subcategory_id,
+      category_id: prompt.category_id,
       is_public: prompt.is_public,
       is_listed: prompt.is_public ? prompt.is_listed : false,
       tags: prompt.tags || [],
@@ -193,7 +197,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
       setIsLoading(true);
       const { data } = await supabase
         .from('categories')
-        .select('id, name, subcategories(id, name)')
+        .select('id, name, is_public, subcategories(id, name)')
         .order('sort_rank', { ascending: true });
       if (data) {
         setCategories(data as unknown as Category[]);
@@ -222,6 +226,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
         p_content: parsedValues.content,
         p_description: parsedValues.description,
         p_subcategory_id: parsedValues.subcategory_id,
+        p_category_id: parsedValues.category_id,
         p_is_public: normalizedVisibility.is_public,
         p_is_listed: normalizedVisibility.is_listed,
         p_tags: parsedValues.tags,
@@ -449,12 +454,12 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
 
                 <TabsContent
                   value="preview"
-                  className="mt-0 ring-offset-background focus-visible:outline-none"
+                  className="mt-0 ring-offset-background focus-visible:outline-none overflow-visible"
                   id="pane-preview"
                 >
-                  <ScrollArea
-                    className="min-h-[500px] max-h-[700px] rounded-xl border bg-muted/30 p-6"
-                    id="preview-view-scroll"
+                  <div
+                    className="min-h-[500px] rounded-xl border bg-muted/30 p-6"
+                    id="preview-view-content"
                   >
                     <pre
                       className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/90"
@@ -466,7 +471,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                         </span>
                       )}
                     </pre>
-                  </ScrollArea>
+                  </div>
                   <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3" id="preview-footer">
                     <div className="text-[11px] text-muted-foreground" id="preview-stats">
                       Filled with{' '}

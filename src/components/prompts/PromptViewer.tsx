@@ -137,6 +137,18 @@ function PromptInline({
   );
 }
 
+interface CategoryInfo {
+  name: string;
+  slug?: string;
+  is_public?: boolean;
+}
+
+interface SubcategoryInfo {
+  name: string;
+  category?: CategoryInfo | CategoryInfo[];
+  categories?: CategoryInfo | CategoryInfo[];
+}
+
 interface PromptViewerProps {
   prompt: {
     id: string;
@@ -144,24 +156,16 @@ interface PromptViewerProps {
     description: string | null;
     content: string;
     slug: string;
-    subcategory_id: string;
+    subcategory_id: string | null;
+    category_id?: string | null;
     is_public: boolean;
     is_listed: boolean;
     tags: string[];
     created_at: string;
     updated_at: string;
     user_id: string;
-    subcategory:
-    | {
-      name: string;
-      category?: { name: string } | { name: string }[];
-      categories?: { name: string } | { name: string }[];
-    }
-    | {
-      name: string;
-      category?: { name: string } | { name: string }[];
-      categories?: { name: string } | { name: string }[];
-    }[];
+    subcategory?: SubcategoryInfo | SubcategoryInfo[];
+    category?: CategoryInfo | CategoryInfo[];
   };
 }
 
@@ -278,9 +282,10 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
           title: forkTitle,
           content: prompt.content,
           description: prompt.description,
-          subcategory_id: prompt.subcategory_id,
+          subcategory_id: prompt.subcategory_id ?? null,
+          category_id: prompt.category_id ?? null,
           is_public: false,
-          is_listed: true,
+          is_listed: false,
           parent_id: prompt.id,
           slug: forkSlug,
         })
@@ -349,9 +354,17 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     ? prompt.subcategory[0]
     : prompt.subcategory;
 
-  // Handle nested aliased category
-  const categoryData = subcategory?.category || subcategory?.categories;
-  const category = Array.isArray(categoryData) ? categoryData[0] : categoryData;
+  // Direct category or derived via subcategory
+  const directCategory = Array.isArray(prompt.category) ? prompt.category[0] : prompt.category;
+  const derivedCategoryData = subcategory?.category || subcategory?.categories;
+  const derivedCategory = Array.isArray(derivedCategoryData) ? derivedCategoryData[0] : derivedCategoryData;
+  
+  const category = directCategory || derivedCategory;
+  const categorySlug = (category as CategoryInfo | undefined)?.slug;
+
+  const categoryIsPublic = (category as CategoryInfo | undefined)?.is_public;
+  const isPublicPromptViewingPrivateCategory =
+    prompt.is_public && !isOwner && categoryIsPublic === false;
 
   return (
     <div
@@ -374,11 +387,25 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
               Library
             </Link>
             <span id="breadcrumb-sep-1">/</span>
-            <span className="hover:text-foreground transition-colors" id="breadcrumb-category">
-              {category?.name}
-            </span>
-            <span id="breadcrumb-sep-2">/</span>
-            <span className="text-foreground" id="breadcrumb-subcategory">{subcategory?.name}</span>
+            {category && !isPublicPromptViewingPrivateCategory ? (
+              <Link
+                href={`/dashboard/categories/${categorySlug}`}
+                className="hover:text-foreground transition-colors"
+                id="breadcrumb-category"
+              >
+                {category.name}
+              </Link>
+            ) : (
+              <span className="text-muted-foreground" id="breadcrumb-category-none">
+                No Category
+              </span>
+            )}
+            {!isPublicPromptViewingPrivateCategory && subcategory?.name ? (
+              <>
+                <span id="breadcrumb-sep-2">/</span>
+                <span className="text-foreground" id="breadcrumb-subcategory">{subcategory?.name}</span>
+              </>
+            ) : null}
           </div>
             <h1
             className="text-2xl font-bold tracking-tight text-foreground"
@@ -685,21 +712,25 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   <span className="text-[10px] text-muted-foreground uppercase font-semibold" id="label-classification">
                     Classification
                   </span>
-                  <div className="flex flex-wrap gap-1.5" id="classification-badges">
-                    <Badge
-                      variant="secondary"
-                      className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
-                      id="badge-cat"
-                    >
-                      {category?.name}
-                    </Badge>
-                    <Badge
-                      variant="secondary"
-                      className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
-                      id="badge-sub"
-                    >
-                      {subcategory?.name}
-                    </Badge>
+                  <div className="flex items-center gap-2" id="prompt-tags">
+                    {!isPublicPromptViewingPrivateCategory && category?.name && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                        id="badge-cat"
+                      >
+                        {category.name}
+                      </Badge>
+                    )}
+                    {!isPublicPromptViewingPrivateCategory && subcategory?.name && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                        id="badge-sub"
+                      >
+                        {subcategory.name}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 

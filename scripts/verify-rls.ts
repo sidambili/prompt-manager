@@ -6,6 +6,13 @@ dotenv.config({ path: '.env.local' })
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+function assertEnvVar(name: string, value: string | undefined): asserts value is string {
+    if (!value) {
+        throw new Error(`Missing environment variable: ${name} (.env.local)`)
+    }
+}
 
 // SUPABASE_SERVICE_ROLE_KEY is usually in .env.local for local dev, 
 // need to grab it if possible or prompt user to add it. 
@@ -17,49 +24,76 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1)
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+if (!serviceRoleKey) {
+    console.error('Missing SUPABASE_SERVICE_ROLE_KEY (.env.local). This script creates users and requires the service role key to delete them during cleanup.')
+    process.exit(1)
+}
+
+assertEnvVar('NEXT_PUBLIC_SUPABASE_URL', supabaseUrl)
+assertEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY', supabaseKey)
+assertEnvVar('SUPABASE_SERVICE_ROLE_KEY', serviceRoleKey)
+
+const supabaseUrlValue = supabaseUrl
+const supabaseKeyValue = supabaseKey
+const serviceRoleKeyValue = serviceRoleKey
+
+const supabase = createClient(supabaseUrlValue, supabaseKeyValue)
+const adminClient = createClient(supabaseUrlValue, serviceRoleKeyValue)
 
 async function verifyRLS() {
     console.log('--- Starting RLS Verification ---')
 
-    const emailA = `user_a_${Date.now()}@test.com`
+    const runId = `${Date.now()}_${Math.random().toString(16).slice(2)}`
+
+    const emailA = `user_a_${runId}@test.com`
     const password = 'testpassword123'
-    const emailB = `user_b_${Date.now()}@test.com`
+    const emailB = `user_b_${runId}@test.com`
 
-    console.log(`1. Creating User A (${emailA})...`)
-    const { data: { user: userA }, error: errA } = await supabase.auth.signUp({
-        email: emailA,
-        password: password,
-    })
-    if (errA || !userA) {
-        // If signups require confirmation, this might "fail" to return a session without manual confirmation in local InBucket.
-        // But usually supabase local auto-confirms or we can use admin to create if this fails.
-        console.error('User A signup failed (might need confirmation):', errA?.message)
-        // Fallback: This is a robust test only if auto-confirm is enabled or we confirm manually.
-        // For local dev, we often need to manually visit the link.
-        console.log('Make sure "Enable email confirmations" is OFF in config.toml for this test to run fully automated, OR check InBucket.')
-        return;
-    }
-    console.log('User A created:', userA.id)
+    let createdPromptId: string | null = null
+    let userAId: string | null = null
+    let userBId: string | null = null
+    const supabaseA = createClient(supabaseUrlValue, supabaseKeyValue)
+    const supabaseB = createClient(supabaseUrlValue, supabaseKeyValue)
 
-    console.log(`2. Creating User B (${emailB})...`)
-    const { data: { user: userB }, error: errB } = await supabase.auth.signUp({
-        email: emailB,
-        password: password,
-    })
-    if (errB || !userB) {
-        console.error('User B signup failed:', errB?.message)
-        return;
-    }
-    console.log('User B created:', userB.id)
+    try {
+        console.log(`1. Creating User A (${emailA})...`)
+        const { data: { user: userA }, error: errA } = await supabase.auth.signUp({
+            email: emailA,
+            password: password,
+        })
+        if (errA || !userA) {
+            console.error('User A signup failed (might need confirmation):', errA?.message)
+            console.log('Make sure "Enable email confirmations" is OFF in config.toml for this test to run fully automated, OR check InBucket.')
+            return
+        }
+        userAId = userA.id
+        console.log('User A created:', userA.id)
 
-    // Client A
-    const supabaseA = createClient(supabaseUrl!, supabaseKey!)
-    await supabaseA.auth.signInWithPassword({ email: emailA, password })
+        console.log(`2. Creating User B (${emailB})...`)
+        const { data: { user: userB }, error: errB } = await supabase.auth.signUp({
+            email: emailB,
+            password: password,
+        })
+        if (errB || !userB) {
+            console.error('User B signup failed:', errB?.message)
+            return
+        }
+        userBId = userB.id
+        console.log('User B created:', userB.id)
 
-    // Client B
-    const supabaseB = createClient(supabaseUrl!, supabaseKey!)
-    await supabaseB.auth.signInWithPassword({ email: emailB, password })
+        // Client A
+        const { error: signInAErr } = await supabaseA.auth.signInWithPassword({ email: emailA, password })
+        if (signInAErr) {
+            console.error('User A sign-in failed:', signInAErr.message)
+            return
+        }
+
+        // Client B
+        const { error: signInBErr } = await supabaseB.auth.signInWithPassword({ email: emailB, password })
+        if (signInBErr) {
+            console.error('User B sign-in failed:', signInBErr.message)
+            return
+        }
 
     // 3. Insert Categories (Need System/Admin role? Or are they public readable?)
     // Categories are protected from insert by "anon" and "authenticated". 
@@ -70,7 +104,7 @@ async function verifyRLS() {
     console.log('3. User A tries to insert a Category (Should FAIL)...')
     const { error: catError } = await supabaseA.from('categories').insert({
         name: 'Test Category',
-        slug: 'test-cat',
+        slug: `test-cat-${runId}`,
     })
     if (catError) {
         console.log('✅ Correctly blocked categoy insert:', catError.message)
@@ -98,16 +132,17 @@ async function verifyRLS() {
     const { data: promptA, error: createError } = await supabaseA.from('prompts').insert({
         title: 'Private Prompt A',
         content: 'Secret content',
-        user_id: userA.id,
+        user_id: userAId,
         subcategory_id: subcatId,
         is_public: false,
-        slug: 'private-prompt-a'
+        slug: `private-prompt-a-${runId}`
     }).select().single()
 
     if (createError) {
         console.error('❌ Failed to create prompt:', createError.message)
         return;
     }
+    createdPromptId = promptA.id
     console.log('✅ User A created private prompt:', promptA.id)
 
     console.log('5. User B tries to READ User A\'s private prompt (Should FAIL)...')
@@ -165,7 +200,7 @@ async function verifyRLS() {
     }
 
     console.log('10. User B tries to update Tags (Should FAIL)...')
-    const { error: tagErrorB } = await supabaseB.from('prompts').update({ tags: ['hacked'] }).eq('id', promptA.id)
+    await supabaseB.from('prompts').update({ tags: ['hacked'] }).eq('id', promptA.id)
     const { data: verTagB } = await supabaseA.from('prompts').select('tags').eq('id', promptA.id).single()
 
     if (JSON.stringify(verTagB?.tags) === JSON.stringify(['test', 'rls'])) {
@@ -175,7 +210,7 @@ async function verifyRLS() {
     }
 
     console.log('11. User B tries to update is_listed (Should FAIL)...')
-    const { error: listedErrorB } = await supabaseB.from('prompts').update({ is_listed: false }).eq('id', promptA.id)
+    await supabaseB.from('prompts').update({ is_listed: false }).eq('id', promptA.id)
     const { data: verListed } = await supabaseA.from('prompts').select('is_listed').eq('id', promptA.id).single()
 
     if (verListed?.is_listed === true) {
@@ -185,6 +220,42 @@ async function verifyRLS() {
     }
 
     console.log('--- RLS Verification Complete ---')
+    } finally {
+        console.log('12. Cleaning up test data...')
+        try {
+            if (createdPromptId) {
+                const { error: deletePromptErr } = await adminClient
+                    .from('prompts')
+                    .delete()
+                    .eq('id', createdPromptId)
+                if (deletePromptErr) {
+                    console.warn('Failed to delete test prompt:', deletePromptErr.message)
+                } else {
+                    console.log('✅ Deleted test prompt')
+                }
+            }
+
+            if (userAId) {
+                const { error: deleteAErr } = await adminClient.auth.admin.deleteUser(userAId)
+                if (deleteAErr) {
+                    console.warn('Failed to delete User A:', deleteAErr.message)
+                } else {
+                    console.log('✅ Deleted User A')
+                }
+            }
+
+            if (userBId) {
+                const { error: deleteBErr } = await adminClient.auth.admin.deleteUser(userBId)
+                if (deleteBErr) {
+                    console.warn('Failed to delete User B:', deleteBErr.message)
+                } else {
+                    console.log('✅ Deleted User B')
+                }
+            }
+        } catch (cleanupError) {
+            console.warn('Cleanup encountered errors:', cleanupError)
+        }
+    }
 }
 
 verifyRLS().catch(console.error)

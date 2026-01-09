@@ -1,7 +1,7 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -47,7 +47,8 @@ const formSchema = z.object({
     title: z.string().min(1, "Title is required").max(100, "Title is too long"),
     content: z.string().min(10, "Content must be at least 10 characters"),
     description: z.string().max(500, "Description is too long").default(""),
-    subcategory_id: z.string().min(1, "Category is required"),
+    subcategory_id: z.string().nullable(),
+    category_id: z.string().nullable(),
     is_public: z.boolean().default(false),
     is_listed: z.boolean().default(false),
     tags: z.array(z.string()).max(10, "Max 10 tags allowed").default([]),
@@ -56,6 +57,7 @@ const formSchema = z.object({
 interface Category {
     id: string;
     name: string;
+    is_public: boolean;
     subcategories: { id: string; name: string }[];
 }
 
@@ -93,7 +95,13 @@ function extractVariables(content: string): Variable[] {
 
 type CreatePromptFormValues = z.input<typeof formSchema>;
 
-export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNode }) {
+export default function CreatePromptModal({ 
+    trigger,
+    defaultCategoryId 
+}: { 
+    trigger?: React.ReactNode;
+    defaultCategoryId?: string;
+}) {
     const [open, setOpen] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -108,7 +116,8 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
             title: "",
             content: "",
             description: "",
-            subcategory_id: "",
+            subcategory_id: null,
+            category_id: null,
             is_public: false,
             is_listed: false,
             tags: [],
@@ -133,19 +142,78 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
     }, [form, isPublic]);
 
     useEffect(() => {
+        if (open && defaultCategoryId && !form.getValues("category_id") && !form.getValues("subcategory_id")) {
+            form.setValue("category_id", defaultCategoryId);
+        }
+    }, [open, defaultCategoryId, form]);
+
+    useEffect(() => {
         if (open) {
             const fetchCategories = async () => {
-                const { data } = await supabase
+                const { data, error } = await supabase
                     .from("categories")
-                    .select("id, name, subcategories(id, name)")
+                    .select("id, name, is_public, subcategories(id, name)")
                     .order("sort_rank", { ascending: true });
 
+                if (error) {
+                    console.error("Failed to fetch categories:", error.message);
+                    return;
+                }
+
                 if (!data) return;
-                setCategories(data as unknown as Category[]);
+
+                const validated: Category[] = data.map((cat) => ({
+                    id: String(cat.id),
+                    name: String(cat.name),
+                    is_public: Boolean(cat.is_public),
+                    subcategories: Array.isArray(cat.subcategories)
+                        ? cat.subcategories.map((sub) => ({
+                              id: String((sub as { id: string; name: string }).id),
+                              name: String((sub as { id: string; name: string }).name),
+                          }))
+                        : [],
+                }));
+                setCategories(validated);
             };
             fetchCategories();
         }
     }, [open, supabase]);
+
+    const selectedSubcategoryId = form.watch("subcategory_id");
+    const selectedCategoryId = form.watch("category_id");
+
+    const selectedCategory = useMemo(() => {
+        if (selectedCategoryId) {
+            return categories.find((cat) => cat.id === selectedCategoryId) ?? null;
+        }
+        if (selectedSubcategoryId && selectedSubcategoryId !== "none") {
+            return (
+                categories.find((cat) =>
+                    cat.subcategories.some((sub) => sub.id === selectedSubcategoryId)
+                ) ?? null
+            );
+        }
+        return null;
+    }, [categories, selectedCategoryId, selectedSubcategoryId]);
+
+    const collectionRef = useMemo(() => {
+        if (selectedSubcategoryId) return `sub:${selectedSubcategoryId}`;
+        if (selectedCategoryId) return `cat:${selectedCategoryId}`;
+        return "none";
+    }, [selectedSubcategoryId, selectedCategoryId]);
+
+    const handleCollectionChange = (value: string) => {
+        if (value === "none") {
+            form.setValue("subcategory_id", null);
+            form.setValue("category_id", null);
+        } else if (value.startsWith("sub:")) {
+            form.setValue("subcategory_id", value.replace("sub:", ""));
+            form.setValue("category_id", null);
+        } else if (value.startsWith("cat:")) {
+            form.setValue("category_id", value.replace("cat:", ""));
+            form.setValue("subcategory_id", null);
+        }
+    };
 
     async function onSubmit(values: CreatePromptFormValues) {
         if (!user) return;
@@ -167,6 +235,7 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                     content: parsedValues.content,
                     description: parsedValues.description,
                     subcategory_id: parsedValues.subcategory_id,
+                    category_id: parsedValues.category_id,
                     is_public: normalizedVisibility.is_public,
                     is_listed: normalizedVisibility.is_listed,
                     tags: parsedValues.tags,
@@ -262,48 +331,68 @@ export default function CreatePromptModal({ trigger }: { trigger?: React.ReactNo
                                         )}
                                     />
 
-                                    <FormField
-                                        control={form.control}
-                                        name="subcategory_id"
-                                        render={({ field }) => (
-                                            <FormItem id="create-prompt-category-field">
-                                                <FormLabel className="text-sm font-medium" id="create-prompt-category-label">Collection</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger
-                                                            className="h-10 text-sm bg-background border-border/50 focus:border-brand transition-all"
-                                                            id="create-prompt-category-trigger"
+                                    <div id="create-prompt-category-field" className="space-y-2">
+                                        <FormLabel className="text-sm font-medium" id="create-prompt-category-label">Collection</FormLabel>
+                                        <Select onValueChange={handleCollectionChange} value={collectionRef}>
+                                            <FormControl>
+                                                <SelectTrigger
+                                                    className="h-10 text-sm bg-background border-border/50 focus:border-brand transition-all"
+                                                    id="create-prompt-category-trigger"
+                                                >
+                                                    <SelectValue placeholder="Select collection" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="bg-card border-border z-[110]" id="create-prompt-category-content">
+                                                <SelectItem value="none" id="create-prompt-subcategory-none">
+                                                    No Collection
+                                                </SelectItem>
+                                                {categories.map((cat) => (
+                                                    <React.Fragment key={cat.id}>
+                                                        <SelectItem
+                                                            value={`cat:${cat.id}`}
+                                                            className="text-sm font-semibold uppercase bg-muted/30 hover:bg-muted/50"
+                                                            id={`create-prompt-category-${cat.id}`}
                                                         >
-                                                            <SelectValue placeholder="Select collection" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="bg-card border-border z-[110]" id="create-prompt-category-content">
-                                                        {categories.map((cat) => (
-                                                            <div key={cat.id} id={`create-prompt-category-group-${cat.id}`}>
-                                                                <div
-                                                                    className="px-2 py-2 text-[11px] font-semibold text-muted-foreground uppercase bg-muted/30"
-                                                                    id={`create-prompt-category-group-label-${cat.id}`}
-                                                                >
-                                                                    {cat.name}
-                                                                </div>
-                                                                {cat.subcategories.map((sub) => (
-                                                                    <SelectItem
-                                                                        key={sub.id}
-                                                                        value={sub.id}
-                                                                        className="text-sm"
-                                                                        id={`create-prompt-subcategory-${sub.id}`}
-                                                                    >
-                                                                        {sub.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </div>
+                                                            {cat.name}
+                                                        </SelectItem>
+                                                        {cat.subcategories.map((sub) => (
+                                                            <SelectItem
+                                                                key={sub.id}
+                                                                value={`sub:${sub.id}`}
+                                                                className="text-sm pl-6"
+                                                                id={`create-prompt-subcategory-${sub.id}`}
+                                                            >
+                                                                {sub.name}
+                                                            </SelectItem>
                                                         ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage className="text-[10px]" />
-                                            </FormItem>
+                                                    </React.Fragment>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {selectedCategory && (
+                                            <div
+                                                className={cn(
+                                                    "mt-2 rounded-sm border px-3 py-2 text-xs",
+                                                    selectedCategory.is_public
+                                                        ? "border-brand/30 bg-brand/5 text-brand"
+                                                        : "border-border bg-muted/30 text-muted-foreground"
+                                                )}
+                                                id="create-prompt-collection-visibility"
+                                            >
+                                                <span className="font-medium" id="create-prompt-collection-visibility-title">
+                                                    Collection visibility:
+                                                </span>{" "}
+                                                <span id="create-prompt-collection-visibility-value">
+                                                    {selectedCategory.is_public ? "Public" : "Private"}
+                                                </span>
+                                                {isPublic && !selectedCategory.is_public && (
+                                                    <div className="mt-1 text-xs text-destructive" id="create-prompt-collection-visibility-warning">
+                                                        This prompt is public, but the selected collection is private. Category/subcategory labels will be hidden on public pages.
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
-                                    />
+                                    </div>
 
                                     <FormField
                                         control={form.control}

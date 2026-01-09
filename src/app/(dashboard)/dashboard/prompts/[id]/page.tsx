@@ -11,7 +11,11 @@ export default async function PromptDetailPage({ params }: { params: Promise<{ i
 
     const { data: prompt, error } = await supabase
         .from("prompts")
-        .select("*, subcategory:subcategories(name, category:categories(name))")
+        .select(`
+            *,
+            subcategory:subcategories(name, categories(name, is_public, slug)),
+            category:categories(name, is_public, slug)
+        `)
         .eq("id", actualId)
         .single();
 

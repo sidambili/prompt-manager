@@ -8,18 +8,19 @@ import { parseSlugId } from '@/lib/slug';
 import PromptEditor from '@/components/prompts/PromptEditor';
 import { Loader2 } from 'lucide-react';
 
- interface PromptRow {
-     id: string;
-     title: string;
-     description: string | null;
-     content: string;
-     slug: string;
-     is_public: boolean;
-     is_listed: boolean;
-     tags: string[];
-     subcategory_id: string;
-     user_id: string;
- }
+interface PromptRow {
+    id: string;
+    title: string;
+    description: string | null;
+    content: string;
+    slug: string;
+    is_public: boolean;
+    is_listed: boolean;
+    tags: string[];
+    subcategory_id: string | null;
+    category_id: string | null;
+    user_id: string;
+}
 
 export default function EditPromptPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);

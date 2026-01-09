@@ -10,12 +10,15 @@ interface Prompt {
     content: string;
     is_public: boolean;
     updated_at: string;
-    subcategories: {
+    subcategories?: {
         name: string;
         categories: {
             name: string;
         };
-    };
+    } | null;
+    categories?: {
+        name: string;
+    } | null;
 }
 
 interface PromptListProps {
