@@ -204,9 +204,22 @@ export default function SubcategoryForm({
                             <Button type="button" variant="outline" onClick={onClose} id="subcategory-cancel-btn">
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isLoading || !hasValidCategory} id="subcategory-submit-btn">
-                                {isLoading ? "Saving..." : "Save Subcategory"}
-                            </Button>
+                            <div className="flex flex-col gap-1">
+                                <Button
+                                    type="submit"
+                                    disabled={isLoading || !hasValidCategory}
+                                    id="subcategory-submit-btn"
+                                    title={!hasValidCategory && !isLoading ? "Select a valid category to enable saving" : undefined}
+                                    aria-describedby={!hasValidCategory && !isLoading ? "category-required-hint" : undefined}
+                                >
+                                    {isLoading ? "Saving..." : "Save Subcategory"}
+                                </Button>
+                                {!hasValidCategory && !isLoading && (
+                                    <p id="category-required-hint" className="text-[11px] text-muted-foreground text-right">
+                                        Select a valid category to enable saving
+                                    </p>
+                                )}
+                            </div>
                         </DialogFooter>
                     </form>
                 </Form>

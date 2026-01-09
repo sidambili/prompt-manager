@@ -25,8 +25,7 @@ if (runRlsTests) {
     assertEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY', supabaseKey)
     assertEnvVar('SUPABASE_SERVICE_ROLE_KEY', serviceRoleKey)
 
-    adminClient! = createClient(supabaseUrl!, serviceRoleKey!)
-}
+    adminClient = createClient(supabaseUrl!, serviceRoleKey!)}
 
 async function cleanupRlsTestArtifacts(): Promise<void> {
     const categorySlugFilter = 'slug.like.private-cat-%,slug.like.private-cat-deny-%,slug.like.private-cat-sub-%,slug.like.public-cat-%'
