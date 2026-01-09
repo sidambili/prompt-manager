@@ -13,6 +13,7 @@ import {
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
@@ -103,20 +104,19 @@ export function PromptSettings({ categories, isLoading }: PromptSettingsProps) {
                                     No Collection
                                 </SelectItem>
                                 {categories.map((cat) => (
-                                    <div key={cat.id} id={`collection-group-${cat.id}`}>
+                                    <SelectGroup key={cat.id}>
                                         <SelectItem
                                             value={`cat:${cat.id}`}
                                             className="text-xs font-bold text-muted-foreground uppercase bg-muted/30 hover:bg-muted/50"
-                                            id={`collection-cat-${cat.id}`}
                                         >
                                             {cat.name}
                                         </SelectItem>
                                         {cat.subcategories.map((sub) => (
-                                            <SelectItem key={sub.id} value={`sub:${sub.id}`} className="text-xs pl-6" id={`collection-sub-${sub.id}`}>
+                                            <SelectItem key={sub.id} value={`sub:${sub.id}`} className="text-xs pl-6">
                                                 {sub.name}
                                             </SelectItem>
                                         ))}
-                                    </div>
+                                    </SelectGroup>
                                 ))}
                             </SelectContent>
                         </Select>

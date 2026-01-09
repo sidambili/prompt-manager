@@ -63,6 +63,7 @@ export default function SubcategoryForm({
     categoryId,
     editingSubcategory,
 }: SubcategoryFormProps) {
+    const hasValidCategory = !!categoryId || !!editingSubcategory?.category_id;
     const [isLoading, setIsLoading] = useState(false);
     const supabase = createClient();
 
@@ -203,7 +204,7 @@ export default function SubcategoryForm({
                             <Button type="button" variant="outline" onClick={onClose} id="subcategory-cancel-btn">
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isLoading} id="subcategory-submit-btn">
+                            <Button type="submit" disabled={isLoading || !hasValidCategory} id="subcategory-submit-btn">
                                 {isLoading ? "Saving..." : "Save Subcategory"}
                             </Button>
                         </DialogFooter>

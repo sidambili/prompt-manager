@@ -53,9 +53,10 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
     const [prompts, setPrompts] = useState<CategoryDetailPrompt[]>([]);
     const [category, setCategory] = useState<Category | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
+        const supabase = createClient();
+
         const fetchData = async () => {
             setIsLoading(true);
 
@@ -100,7 +101,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
         };
 
         fetchData();
-    }, [slug, supabase]);
+    }, [slug]);
 
     return (
         <div className="space-y-6" id="category-detail-page">
@@ -124,9 +125,8 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
                         trigger={
                             <Button id="category-add-prompt-btn">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add New prompts
-                            </Button>
-                        }
+                                Add New Prompt
+                            </Button>                        }
                     />
                 </div>
             </div>
@@ -138,7 +138,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
                     <div className="flex flex-col items-center justify-center py-20 text-center border rounded-sm bg-card/50" id="category-prompts-empty">
                         <Folder className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <h3 className="text-lg font-medium">No prompts found</h3>
-                        <p className="text-sm text-muted-foreground">There are no prompts assigned to subcategories in this category.</p>
+                        <p className="text-sm text-muted-foreground">There are no prompts in this category yet.</p>
                     </div>
                 ) : (
                     <PromptList prompts={prompts} isLoading={false} />

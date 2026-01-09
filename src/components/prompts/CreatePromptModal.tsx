@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -346,7 +347,7 @@ export default function CreatePromptModal({
                                                     No Collection
                                                 </SelectItem>
                                                 {categories.map((cat) => (
-                                                    <div key={cat.id} id={`create-prompt-category-group-${cat.id}`}>
+                                                    <React.Fragment key={cat.id}>
                                                         <SelectItem
                                                             value={`cat:${cat.id}`}
                                                             className="text-sm font-semibold uppercase bg-muted/30 hover:bg-muted/50"
@@ -364,7 +365,7 @@ export default function CreatePromptModal({
                                                                 {sub.name}
                                                             </SelectItem>
                                                         ))}
-                                                    </div>
+                                                    </React.Fragment>
                                                 ))}
                                             </SelectContent>
                                         </Select>
