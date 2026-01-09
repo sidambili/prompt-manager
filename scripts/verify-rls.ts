@@ -52,8 +52,8 @@ async function verifyRLS() {
     let createdPromptId: string | null = null
     let userAId: string | null = null
     let userBId: string | null = null
-    let supabaseA = createClient(supabaseUrlValue, supabaseKeyValue)
-    let supabaseB = createClient(supabaseUrlValue, supabaseKeyValue)
+    const supabaseA = createClient(supabaseUrlValue, supabaseKeyValue)
+    const supabaseB = createClient(supabaseUrlValue, supabaseKeyValue)
 
     try {
         console.log(`1. Creating User A (${emailA})...`)
@@ -200,7 +200,7 @@ async function verifyRLS() {
     }
 
     console.log('10. User B tries to update Tags (Should FAIL)...')
-    const { error: tagErrorB } = await supabaseB.from('prompts').update({ tags: ['hacked'] }).eq('id', promptA.id)
+    await supabaseB.from('prompts').update({ tags: ['hacked'] }).eq('id', promptA.id)
     const { data: verTagB } = await supabaseA.from('prompts').select('tags').eq('id', promptA.id).single()
 
     if (JSON.stringify(verTagB?.tags) === JSON.stringify(['test', 'rls'])) {
@@ -210,7 +210,7 @@ async function verifyRLS() {
     }
 
     console.log('11. User B tries to update is_listed (Should FAIL)...')
-    const { error: listedErrorB } = await supabaseB.from('prompts').update({ is_listed: false }).eq('id', promptA.id)
+    await supabaseB.from('prompts').update({ is_listed: false }).eq('id', promptA.id)
     const { data: verListed } = await supabaseA.from('prompts').select('is_listed').eq('id', promptA.id).single()
 
     if (verListed?.is_listed === true) {
