@@ -713,20 +713,24 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                     Classification
                   </span>
                   <div className="flex items-center gap-2" id="prompt-tags">
-                    <Badge
-                      variant="secondary"
-                      className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
-                      id="badge-cat"
-                    >
-                      {isPublicPromptViewingPrivateCategory ? null : category?.name}
-                    </Badge>
-                    <Badge
-                      variant="secondary"
-                      className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
-                      id="badge-sub"
-                    >
-                      {isPublicPromptViewingPrivateCategory ? null : subcategory?.name}
-                    </Badge>
+                    {!isPublicPromptViewingPrivateCategory && category?.name && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                        id="badge-cat"
+                      >
+                        {category.name}
+                      </Badge>
+                    )}
+                    {!isPublicPromptViewingPrivateCategory && subcategory?.name && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[11px] h-5 rounded hover:bg-muted font-normal border-transparent"
+                        id="badge-sub"
+                      >
+                        {subcategory.name}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
