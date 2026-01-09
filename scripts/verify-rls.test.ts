@@ -5,7 +5,8 @@ import dotenv from 'dotenv'
 
 dotenv.config({ path: '.env.local' })
 
-const describeRls = process.env.RUN_RLS_TESTS === 'true' ? describe : describe.skip
+const runRlsTests = process.env.RUN_RLS_TESTS === 'true'
+const describeRls = runRlsTests ? describe : describe.skip
 
 function assertEnvVar(name: string, value: string | undefined): asserts value is string {
     if (!value) {
@@ -22,6 +23,67 @@ assertEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY', supabaseKey)
 assertEnvVar('SUPABASE_SERVICE_ROLE_KEY', serviceRoleKey)
 
 const adminClient = createClient(supabaseUrl, serviceRoleKey)
+
+async function cleanupRlsTestArtifacts(): Promise<void> {
+    const categorySlugFilter = 'slug.like.private-cat-%,slug.like.private-cat-deny-%,slug.like.private-cat-sub-%,slug.like.public-cat-%'
+    const subcategorySlugFilter = 'slug.like.public-sub-%,slug.like.private-sub-%'
+
+    const { error: deleteSubErr } = await adminClient
+        .from('subcategories')
+        .delete()
+        .or(subcategorySlugFilter)
+    if (deleteSubErr) {
+        console.warn('[Cleanup] Failed pre-sweep delete for subcategories:', deleteSubErr.message)
+    }
+
+    const { error: deleteCatErr } = await adminClient
+        .from('categories')
+        .delete()
+        .or(categorySlugFilter)
+    if (deleteCatErr) {
+        console.warn('[Cleanup] Failed pre-sweep delete for categories:', deleteCatErr.message)
+    }
+
+    const emailPrefixes = [
+        'test_visibility_a_',
+        'test_visibility_b_',
+        'test_deletion_',
+        'test_deletion_other_',
+    ]
+
+    const pageSize = 100
+    let page = 1
+    for (;;) {
+        const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: pageSize })
+        if (error) {
+            console.warn('[Cleanup] Failed to list users for pre-sweep cleanup:', error.message)
+            break
+        }
+
+        const users = data?.users ?? []
+        for (const user of users) {
+            const email = user.email
+            if (!email) continue
+
+            const shouldDelete = emailPrefixes.some((prefix) => email.startsWith(prefix))
+            if (!shouldDelete) continue
+
+            const { error: deleteUserErr } = await adminClient.auth.admin.deleteUser(user.id)
+            if (deleteUserErr) {
+                console.warn(`[Cleanup] Failed to delete test user ${email}:`, deleteUserErr.message)
+            }
+        }
+
+        if (users.length < pageSize) break
+        page += 1
+    }
+}
+
+if (runRlsTests) {
+    beforeAll(async () => {
+        await cleanupRlsTestArtifacts()
+    })
+}
 
 interface TestUser {
     id: string;
