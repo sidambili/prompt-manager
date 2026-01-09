@@ -1,9 +1,11 @@
 
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
 
 dotenv.config({ path: '.env.local' })
+
+const describeRls = process.env.RUN_RLS_TESTS === 'true' ? describe : describe.skip
 
 function assertEnvVar(name: string, value: string | undefined): asserts value is string {
     if (!value) {
@@ -26,12 +28,14 @@ interface TestUser {
     email?: string;
 }
 
-describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
+describeRls('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
     let userA: TestUser
     let userB: TestUser
     let userAClient: SupabaseClient
     let userBClient: SupabaseClient
     let anonClient: SupabaseClient
+    const createdCategoryIds: string[] = []
+    const createdSubcategoryIds: string[] = []
 
     beforeAll(async () => {
         const password = 'TestPassword123!'
@@ -75,6 +79,95 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
         anonClient = createClient(supabaseUrl, supabaseKey)
     })
 
+    afterAll(async () => {
+        try {
+            console.log(`[Cleanup] Deleting any remaining subcategories...`)
+            for (const subId of createdSubcategoryIds) {
+                const { data: deletedSubcategories, error } = await adminClient
+                    .from('subcategories')
+                    .delete()
+                    .eq('id', subId)
+                    .select('id')
+                if (error) {
+                    console.warn(`[Cleanup] Failed to delete subcategory ${subId}:`, error.message)
+                } else {
+                    if ((deletedSubcategories?.length ?? 0) === 0) {
+                        console.warn(`[Cleanup] Subcategory delete affected 0 rows: ${subId}`)
+                    } else {
+                        console.log(`[Cleanup] Deleted subcategory ${subId}`)
+                    }
+                }
+            }
+
+            console.log(`[Cleanup] Deleting ${createdCategoryIds.length} categories (will cascade to subcategories)...`)
+            for (const catId of createdCategoryIds) {
+                const { data: deletedCategories, error } = await adminClient
+                    .from('categories')
+                    .delete()
+                    .eq('id', catId)
+                    .select('id')
+                if (error) {
+                    console.warn(`[Cleanup] Failed to delete category ${catId}:`, error.message)
+                } else {
+                    if ((deletedCategories?.length ?? 0) === 0) {
+                        console.warn(`[Cleanup] Category delete affected 0 rows: ${catId}`)
+                    } else {
+                        console.log(`[Cleanup] Deleted category ${catId}`)
+                    }
+                }
+            }
+
+            const { data: leftoverCategories, error: leftoverCategoriesErr } = await adminClient
+                .from('categories')
+                .select('id, slug')
+                .or('slug.like.private-cat-%,slug.like.private-cat-deny-%,slug.like.private-cat-sub-%,slug.like.public-cat-%')
+            if (leftoverCategoriesErr) {
+                console.warn('[Cleanup] Failed to list leftover categories:', leftoverCategoriesErr.message)
+            } else if ((leftoverCategories?.length ?? 0) > 0) {
+                console.warn(`[Cleanup] Found leftover categories: ${leftoverCategories?.map((c) => c.slug).join(', ')}`)
+                const { error: sweepErr } = await adminClient
+                    .from('categories')
+                    .delete()
+                    .or('slug.like.private-cat-%,slug.like.private-cat-deny-%,slug.like.private-cat-sub-%,slug.like.public-cat-%')
+                if (sweepErr) {
+                    console.warn('[Cleanup] Failed to sweep-delete leftover categories:', sweepErr.message)
+                }
+            }
+
+            const { data: leftoverSubcategories, error: leftoverSubcategoriesErr } = await adminClient
+                .from('subcategories')
+                .select('id, slug')
+                .or('slug.like.public-sub-%,slug.like.private-sub-%')
+            if (leftoverSubcategoriesErr) {
+                console.warn('[Cleanup] Failed to list leftover subcategories:', leftoverSubcategoriesErr.message)
+            } else if ((leftoverSubcategories?.length ?? 0) > 0) {
+                console.warn(`[Cleanup] Found leftover subcategories: ${leftoverSubcategories?.map((s) => s.slug).join(', ')}`)
+                const { error: sweepSubErr } = await adminClient
+                    .from('subcategories')
+                    .delete()
+                    .or('slug.like.public-sub-%,slug.like.private-sub-%')
+                if (sweepSubErr) {
+                    console.warn('[Cleanup] Failed to sweep-delete leftover subcategories:', sweepSubErr.message)
+                }
+            }
+
+            if (userA?.id) {
+                const { error } = await adminClient.auth.admin.deleteUser(userA.id)
+                if (error) console.warn('[Cleanup] Failed to delete User A:', error.message)
+                else console.log('[Cleanup] Deleted User A')
+            }
+            if (userB?.id) {
+                const { error } = await adminClient.auth.admin.deleteUser(userB.id)
+                if (error) console.warn('[Cleanup] Failed to delete User B:', error.message)
+                else console.log('[Cleanup] Deleted User B')
+            }
+
+            console.log('[Cleanup] First test suite cleanup complete')
+        } catch (cleanupError) {
+            console.error('[Cleanup] Error in first test suite:', cleanupError)
+        }
+    })
+
     it('should allow owner to read their private category', async () => {
         const slug = `private-cat-${Date.now()}`
         const { data: inserted, error: insertErr } = await userAClient
@@ -83,6 +176,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
             .select('id')
             .single()
         expect(insertErr).toBeNull()
+        if (inserted?.id) createdCategoryIds.push(inserted.id)
 
         const { data: rows, error: selectErr } = await userAClient
             .from('categories')
@@ -102,6 +196,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
             .select('id')
             .single()
         expect(insertErr).toBeNull()
+        if (inserted?.id) createdCategoryIds.push(inserted.id)
 
         const { data: rows, error: selectErr } = await userBClient
             .from('categories')
@@ -119,6 +214,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
             .select('id')
             .single()
         expect(insertCatErr).toBeNull()
+        if (cat?.id) createdCategoryIds.push(cat.id)
 
         const { data: sub, error: insertSubErr } = await userAClient
             .from('subcategories')
@@ -126,6 +222,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
             .select('id, category_id')
             .single()
         expect(insertSubErr).toBeNull()
+        if (sub?.id) createdSubcategoryIds.push(sub.id)
 
         const { data: catRows, error: anonCatErr } = await anonClient
             .from('categories')
@@ -150,6 +247,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
             .select('id')
             .single()
         expect(insertCatErr).toBeNull()
+        if (cat?.id) createdCategoryIds.push(cat.id)
 
         const { data: sub, error: insertSubErr } = await userAClient
             .from('subcategories')
@@ -157,6 +255,7 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
             .select('id')
             .single()
         expect(insertSubErr).toBeNull()
+        if (sub?.id) createdSubcategoryIds.push(sub.id)
 
         const { data: rows, error: anonErr } = await anonClient
             .from('subcategories')
@@ -166,7 +265,8 @@ describe('RLS: Category/Subcategory Visibility (Owner + Public)', () => {
         expect(rows?.length ?? 0).toBe(0)
     })
 })
-describe('Data Integrity: Category and Subcategory Deletion', () => {
+
+describeRls('Data Integrity: Category and Subcategory Deletion', () => {
     let testUser: TestUser
     let userClient: SupabaseClient
     let otherUser: TestUser
@@ -174,6 +274,7 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
     let categoryId: string
     let subcategoryId: string
     let promptId: string
+    const additionalSubcategoryIds: string[] = []
 
     beforeAll(async () => {
         // 1. Create a test user
@@ -246,6 +347,41 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
         promptId = prompt.id
     })
 
+    afterAll(async () => {
+        try {
+            console.log(`[Cleanup] Deleting ${additionalSubcategoryIds.length} additional subcategories...`)
+            for (const subId of additionalSubcategoryIds) {
+                const { error } = await adminClient.from('subcategories').delete().eq('id', subId)
+                if (error) {
+                    console.warn(`[Cleanup] Failed to delete subcategory ${subId}:`, error.message)
+                }
+            }
+            if (promptId) {
+                const { error } = await adminClient.from('prompts').delete().eq('id', promptId)
+                if (error) console.warn(`[Cleanup] Failed to delete prompt ${promptId}:`, error.message)
+            }
+            if (subcategoryId) {
+                const { error } = await adminClient.from('subcategories').delete().eq('id', subcategoryId)
+                if (error) console.warn(`[Cleanup] Failed to delete subcategory ${subcategoryId}:`, error.message)
+            }
+            if (categoryId) {
+                const { error } = await adminClient.from('categories').delete().eq('id', categoryId)
+                if (error) console.warn(`[Cleanup] Failed to delete category ${categoryId}:`, error.message)
+            }
+            if (testUser?.id) {
+                const { error } = await adminClient.auth.admin.deleteUser(testUser.id)
+                if (error) console.warn('[Cleanup] Failed to delete test user:', error.message)
+            }
+            if (otherUser?.id) {
+                const { error } = await adminClient.auth.admin.deleteUser(otherUser.id)
+                if (error) console.warn('[Cleanup] Failed to delete other user:', error.message)
+            }
+            console.log('[Cleanup] Second test suite cleanup complete')
+        } catch (cleanupError) {
+            console.error('[Cleanup] Error in second test suite:', cleanupError)
+        }
+    })
+
     it('should move prompt to parent category when subcategory is deleted', async () => {
         const { data: initialPrompt } = await userClient
             .from('prompts')
@@ -276,6 +412,7 @@ describe('Data Integrity: Category and Subcategory Deletion', () => {
             .single()
         expect(subErr).toBeNull()
         expect(sub?.id).toBeTruthy()
+        if (sub?.id) additionalSubcategoryIds.push(sub.id)
 
         const { error: unauthorizedErr } = await otherUserClient
             .rpc('delete_subcategory_reassign_prompts', { p_subcategory_id: sub!.id })
