@@ -4,6 +4,9 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
+import { visit } from 'unist-util-visit';
+import type { Root, Text, Parent } from 'mdast';
+import type { Plugin } from 'unified';
 
 import { cn } from '@/lib/utils';
 
@@ -29,8 +32,108 @@ function isExternalHref(href: string): boolean {
   return /^https?:\/\//i.test(href);
 }
 
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+type HighlightText = Text & {
+  data?: {
+    hName?: string;
+    hProperties?: {
+      className?: string;
+    };
+  };
+};
+
+/**
+ * Splits a text node into plain text, `{{...}}` placeholder segments, and highlight segments.
+ * This is intended to run only for markdown text nodes (not code), so it does
+ * not affect fenced/inline code rendering.
+ */
+function splitTextForHighlighting(
+  text: string,
+  highlightValues: string[]
+): Array<{ type: 'text' | 'placeholder' | 'highlight'; value: string }> {
+  const values = highlightValues
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0);
+
+  const placeholderPattern = '\\{\\{[^}]+\\}\\}';
+  const valuePatterns = values
+    .sort((a, b) => b.length - a.length)
+    .map((v) => escapeRegex(v));
+
+  const alternates = [placeholderPattern, ...valuePatterns];
+  const pattern = new RegExp(`(${alternates.join('|')})`, 'g');
+
+  const segments: Array<{ type: 'text' | 'placeholder' | 'highlight'; value: string }> = [];
+
+  let lastIndex = 0;
+  for (const match of text.matchAll(pattern)) {
+    const full = match[1] ?? '';
+    const start = match.index ?? 0;
+
+    if (start > lastIndex) {
+      segments.push({ type: 'text', value: text.slice(lastIndex, start) });
+    }
+
+    const isPlaceholder = full.startsWith('{{') && full.endsWith('}}');
+    segments.push({ type: isPlaceholder ? 'placeholder' : 'highlight', value: full });
+    lastIndex = start + full.length;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push({ type: 'text', value: text.slice(lastIndex) });
+  }
+
+  return segments;
+}
+
+function isCodeContainer(parent: Parent | undefined): boolean {
+  if (!parent) return false;
+  return parent.type === 'code' || parent.type === 'inlineCode';
+}
+
+function createHighlightPlugin(highlightValues: string[]): Plugin<[], Root> {
+  return () => {
+    return (tree: Root) => {
+      visit(tree, 'text', (node, index, parent) => {
+        if (!parent || typeof index !== 'number') return;
+        if (isCodeContainer(parent as Parent)) return;
+
+        const segments = splitTextForHighlighting(node.value, highlightValues);
+        if (segments.length <= 1) return;
+
+        const replacementNodes: Array<Text> = segments.map((segment) => {
+          if (segment.type === 'text') {
+            return { type: 'text', value: segment.value };
+          }
+
+          const highlighted: HighlightText = {
+            type: 'text',
+            value: segment.value,
+            data: {
+              hName: 'span',
+              hProperties: {
+                className: 'pm-placeholder',
+              },
+            },
+          };
+
+          return highlighted;
+        });
+
+        const children = (parent as Parent).children;
+        children.splice(index, 1, ...replacementNodes);
+        return index + replacementNodes.length;
+      });
+    };
+  };
+}
+
 export interface MarkdownPreviewProps {
   content: string;
+  highlightValues?: string[];
   className?: string;
   id: string;
 }
@@ -44,7 +147,7 @@ export interface MarkdownPreviewProps {
  * - Blocks images.
  * - Prevents unsafe `javascript:` links.
  */
-export function MarkdownPreview({ content, className, id }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, highlightValues, className, id }: MarkdownPreviewProps) {
   const components: Components = {
     img: () => null,
     a: ({ href, children, ...props }) => {
@@ -105,12 +208,22 @@ export function MarkdownPreview({ content, className, id }: MarkdownPreviewProps
   };
 
   const sanitized = stripFrontmatter(content);
+  const highlightPlugin = createHighlightPlugin(highlightValues ?? []);
+
+  const sanitizeSchema = {
+    tagNames: ['span', 'a', 'strong', 'em', 'code', 'pre', 'blockquote', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+    attributes: {
+      '*': ['className'],
+      a: ['href', 'target', 'rel'],
+      span: ['className'],
+    },
+  };
 
   return (
     <div className={cn('pm-markdown', className)} id={id}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
-        rehypePlugins={[rehypeSanitize]}
+        remarkPlugins={[remarkGfm, remarkBreaks, highlightPlugin]}
+        rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
         components={components}
       >
         {sanitized}
