@@ -33,13 +33,13 @@ end;
 $$ language plpgsql;
 
 -- Trigger for INSERT (Captures v1 - initial revision)
-create trigger trg_prompt_revision_insert
+create or replace trigger trg_prompt_revision_insert
     after insert on public.prompts
     for each row
     execute function public.handle_prompt_revision();
 
 -- Trigger for UPDATE (Captures v1, v2...)
-create trigger trg_prompt_revision_update
+create or replace trigger trg_prompt_revision_update
     after update on public.prompts
     for each row
     execute function public.handle_prompt_revision();

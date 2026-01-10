@@ -1,5 +1,5 @@
 -- Add commit_message column to prompt_revisions
-ALTER TABLE public.prompt_revisions ADD COLUMN commit_message text;
+ALTER TABLE public.prompt_revisions ADD COLUMN if not exists commit_message text;
 
 -- Update the handle_prompt_revision function to use a session variable for commit message
 CREATE OR REPLACE FUNCTION public.handle_prompt_revision()

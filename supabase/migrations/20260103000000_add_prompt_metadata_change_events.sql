@@ -72,6 +72,7 @@ create index if not exists idx_prompt_change_events_batch_id
 
 alter table public.prompt_change_events enable row level security;
 
+drop policy if exists "Users can view metadata events for their own prompts" on public.prompt_change_events;
 create policy "Users can view metadata events for their own prompts"
     on public.prompt_change_events for select
     using (
@@ -82,6 +83,7 @@ create policy "Users can view metadata events for their own prompts"
         )
     );
 
+drop policy if exists "Users can create metadata events for their own prompts" on public.prompt_change_events;
 create policy "Users can create metadata events for their own prompts"
     on public.prompt_change_events for insert
     with check (
