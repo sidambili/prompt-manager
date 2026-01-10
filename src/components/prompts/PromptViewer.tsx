@@ -264,12 +264,6 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
     return variables.filter((v) => !values[v.key]?.trim()).length;
   }, [variables, values]);
 
-  const previewHighlightValues = useMemo(() => {
-    return variables
-      .map((v) => values[v.key]?.trim())
-      .filter((v): v is string => !!v);
-  }, [variables, values]);
-
   const handleFork = async () => {
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
@@ -579,7 +573,6 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   {filledOutput ? (
                     <MarkdownPreview
                       content={filledOutput}
-                      highlightValues={previewHighlightValues}
                       className="text-sm leading-relaxed text-foreground/90"
                       id="preview-text"
                     />

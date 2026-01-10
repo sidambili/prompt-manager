@@ -32,10 +32,6 @@ function isExternalHref(href: string): boolean {
   return /^https?:\/\//i.test(href);
 }
 
-function escapeRegex(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 type HighlightText = Text & {
   data?: {
     hName?: string;
@@ -51,34 +47,22 @@ type HighlightText = Text & {
  * not affect fenced/inline code rendering.
  */
 function splitTextForHighlighting(
-  text: string,
-  highlightValues: string[]
-): Array<{ type: 'text' | 'placeholder' | 'highlight'; value: string }> {
-  const values = highlightValues
-    .map((v) => v.trim())
-    .filter((v) => v.length > 0);
+  text: string
+): Array<{ type: 'text' | 'placeholder'; value: string }> {
+  const pattern = /\{\{[^}]+\}\}/g;
 
-  const placeholderPattern = '\\{\\{[^}]+\\}\\}';
-  const valuePatterns = values
-    .sort((a, b) => b.length - a.length)
-    .map((v) => escapeRegex(v));
-
-  const alternates = [placeholderPattern, ...valuePatterns];
-  const pattern = new RegExp(`(${alternates.join('|')})`, 'g');
-
-  const segments: Array<{ type: 'text' | 'placeholder' | 'highlight'; value: string }> = [];
+  const segments: Array<{ type: 'text' | 'placeholder'; value: string }> = [];
 
   let lastIndex = 0;
   for (const match of text.matchAll(pattern)) {
-    const full = match[1] ?? '';
+    const full = match[0] ?? '';
     const start = match.index ?? 0;
 
     if (start > lastIndex) {
       segments.push({ type: 'text', value: text.slice(lastIndex, start) });
     }
 
-    const isPlaceholder = full.startsWith('{{') && full.endsWith('}}');
-    segments.push({ type: isPlaceholder ? 'placeholder' : 'highlight', value: full });
+    segments.push({ type: 'placeholder', value: full });
     lastIndex = start + full.length;
   }
 
@@ -94,14 +78,14 @@ function isCodeContainer(parent: Parent | undefined): boolean {
   return parent.type === 'code' || parent.type === 'inlineCode';
 }
 
-function createHighlightPlugin(highlightValues: string[]): Plugin<[], Root> {
+function createHighlightPlugin(): Plugin<[], Root> {
   return () => {
     return (tree: Root) => {
       visit(tree, 'text', (node, index, parent) => {
         if (!parent || typeof index !== 'number') return;
         if (isCodeContainer(parent as Parent)) return;
 
-        const segments = splitTextForHighlighting(node.value, highlightValues);
+        const segments = splitTextForHighlighting(node.value);
         if (segments.length <= 1) return;
 
         const replacementNodes: Array<Text> = segments.map((segment) => {
@@ -133,7 +117,6 @@ function createHighlightPlugin(highlightValues: string[]): Plugin<[], Root> {
 
 export interface MarkdownPreviewProps {
   content: string;
-  highlightValues?: string[];
   className?: string;
   id: string;
 }
@@ -147,7 +130,7 @@ export interface MarkdownPreviewProps {
  * - Blocks images.
  * - Prevents unsafe `javascript:` links.
  */
-export function MarkdownPreview({ content, highlightValues, className, id }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, className, id }: MarkdownPreviewProps) {
   const components: Components = {
     img: () => null,
     a: ({ href, children, ...props }) => {
@@ -208,7 +191,7 @@ export function MarkdownPreview({ content, highlightValues, className, id }: Mar
   };
 
   const sanitized = stripFrontmatter(content);
-  const highlightPlugin = createHighlightPlugin(highlightValues ?? []);
+  const highlightPlugin = createHighlightPlugin();
 
   const sanitizeSchema = {
     tagNames: ['span', 'a', 'strong', 'em', 'code', 'pre', 'blockquote', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'br', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
