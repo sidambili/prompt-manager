@@ -211,7 +211,7 @@ export function MarkdownPreview({ content, highlightValues, className, id }: Mar
   const highlightPlugin = createHighlightPlugin(highlightValues ?? []);
 
   const sanitizeSchema = {
-    tagNames: ['span', 'a', 'strong', 'em', 'code', 'pre', 'blockquote', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+    tagNames: ['span', 'a', 'strong', 'em', 'code', 'pre', 'blockquote', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'br', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
     attributes: {
       '*': ['className'],
       a: ['href', 'target', 'rel'],
