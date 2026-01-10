@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   GitFork,
   Edit2,
@@ -16,7 +15,6 @@ import {
   Check,
   ArrowLeft,
   Home,
-  History,
   RotateCcw,
   Loader2,
 } from 'lucide-react';
@@ -31,6 +29,7 @@ import { CopyButton } from '@/components/ui/copy-button';
 import { RevisionHistory, type Revision } from './RevisionHistory';
 import { MetadataHistory } from './MetadataHistory';
 import { type JsonValue, type PromptChangeEvent } from '@/lib/promptChangeEvents';
+import { MarkdownPreview } from '@/components/markdown/MarkdownPreview';
 
 interface Variable {
   key: string;
@@ -513,7 +512,7 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                   className="h-9 px-5 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                   id="tab-preview"
                 >
-                  Output
+                  Preview
                 </TabsTrigger>
               </TabsList>
 
@@ -562,25 +561,26 @@ export default function PromptViewer({ prompt }: PromptViewerProps) {
                       variant="outline"
                       size="icon"
                       value={filledOutput}
-                      label="Output"
+                      label="Preview"
                       disabled={missingCount > 0}
                       className="h-7 w-7 bg-background/80 backdrop-blur-sm hover:border-brand hover:text-brand shadow-sm"
-                      title="Copy output"
+                      title="Copy preview"
                       id="btn-floating-copy-output"
                     />
                   </div>
                 </div>
                 <div className="p-6 pt-0">
-                  <pre
-                    className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/90"
-                    id="preview-text"
-                  >
-                    {filledOutput || (
-                      <span className="text-muted-foreground italic">
-                        No output generated yet.
-                      </span>
-                    )}
-                  </pre>
+                  {filledOutput ? (
+                    <MarkdownPreview
+                      content={filledOutput}
+                      className="text-sm leading-relaxed text-foreground/90"
+                      id="preview-text"
+                    />
+                  ) : (
+                    <span className="text-muted-foreground italic" id="preview-text-empty">
+                      No output generated yet.
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3" id="preview-footer">

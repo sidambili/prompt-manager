@@ -145,6 +145,74 @@
     padding-top: env(safe-area-inset-top);
   }
 
+  .pm-markdown {
+    line-height: 1.65;
+  }
+
+  .pm-markdown h1,
+  .pm-markdown h2,
+  .pm-markdown h3,
+  .pm-markdown h4,
+  .pm-markdown h5,
+  .pm-markdown h6 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-top: 1.25em;
+    margin-bottom: 0.5em;
+  }
+
+  .pm-markdown h1 {
+    font-size: 1.25rem;
+  }
+
+  .pm-markdown h2 {
+    font-size: 1.125rem;
+  }
+
+  .pm-markdown h3 {
+    font-size: 1rem;
+  }
+
+  .pm-markdown p {
+    margin: 0.75em 0;
+  }
+
+  .pm-markdown ul,
+  .pm-markdown ol {
+    margin: 0.75em 0;
+    padding-left: 1.25rem;
+  }
+
+  .pm-markdown li {
+    margin: 0.25em 0;
+  }
+
+  .pm-markdown blockquote {
+    border-left: 3px solid var(--border);
+    padding-left: 0.9rem;
+    margin: 0.9rem 0;
+    color: color-mix(in oklab, var(--foreground) 75%, transparent);
+  }
+
+  .pm-markdown hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 1.25rem 0;
+  }
+
+  .pm-markdown code {
+    background: color-mix(in oklab, var(--muted) 65%, transparent);
+    border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+    border-radius: calc(var(--radius) - 6px);
+    padding: 0.08rem 0.35rem;
+  }
+
+  .pm-markdown pre code {
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+
   .app-safe-area-pb {
     padding-bottom: env(safe-area-inset-bottom);
   }
