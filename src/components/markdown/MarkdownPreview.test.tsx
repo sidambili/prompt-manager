@@ -165,9 +165,8 @@ describe('MarkdownPreview', () => {
       />
     );
 
-    const link = container.querySelector('a');
-    expect(link).not.toBeNull();
-    expect(link?.getAttribute('href')).toBeNull();
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.querySelector('a[href]')).toBeNull();
     expect(container.textContent).toContain('Bad');
   });
 

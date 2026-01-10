@@ -22,7 +22,9 @@ function stripFrontmatter(markdown: string): string {
  * Returns true when a link should not be rendered as clickable due to an unsafe protocol.
  */
 function isUnsafeHref(href: string): boolean {
-  return href.trim().toLowerCase().startsWith('javascript:');
+  const normalized = href.trim().toLowerCase();
+  const disallowedPrefixes = ['javascript:', 'data:', 'vbscript:', 'file:'];
+  return disallowedPrefixes.some((prefix) => normalized.startsWith(prefix));
 }
 
 /**
@@ -135,7 +137,7 @@ export function MarkdownPreview({ content, className, id }: MarkdownPreviewProps
     img: () => null,
     a: ({ href, children, ...props }) => {
       if (!href) {
-        return <a {...props}>{children}</a>;
+        return <span>{children}</span>;
       }
 
       if (isUnsafeHref(href)) {
@@ -198,7 +200,6 @@ export function MarkdownPreview({ content, className, id }: MarkdownPreviewProps
     attributes: {
       '*': ['className'],
       a: ['href', 'target', 'rel'],
-      span: ['className'],
     },
   };
 

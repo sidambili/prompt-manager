@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Markdown Preview rendering for prompt output (GFM tables, soft breaks) with placeholder highlighting for `{{...}}`
+
+### Changed
+- Prompt Viewer Preview tab now renders sanitized Markdown instead of raw text
+
+### Fixed
+- Prevented unintended global highlighting from filled parameter values by limiting highlighting to `{{...}}` placeholders only
+
 ## 1.2.0 (2026-01-08)
 
 ### Added
