@@ -22,9 +22,61 @@ function stripFrontmatter(markdown: string): string {
  * Returns true when a link should not be rendered as clickable due to an unsafe protocol.
  */
 function isUnsafeHref(href: string): boolean {
-  const normalized = href.trim().toLowerCase();
-  const disallowedPrefixes = ['javascript:', 'data:', 'vbscript:', 'file:'];
-  return disallowedPrefixes.some((prefix) => normalized.startsWith(prefix));
+  const normalized = canonicalizeHrefForSchemeCheck(href);
+
+  // Relative URLs are treated as safe.
+  if (
+    normalized.startsWith('/') ||
+    normalized.startsWith('./') ||
+    normalized.startsWith('../') ||
+    normalized.startsWith('#') ||
+    normalized.startsWith('?')
+  ) {
+    return false;
+  }
+
+  const schemeMatch = /^([a-z][a-z0-9+.-]*):/i.exec(normalized);
+  if (!schemeMatch) {
+    // No scheme and not a recognized relative form. Treat as unsafe.
+    return true;
+  }
+
+  const scheme = schemeMatch[1]?.toLowerCase();
+  const allowedSchemes = new Set(['http', 'https', 'mailto', 'tel']);
+  return !scheme || !allowedSchemes.has(scheme);
+}
+
+function canonicalizeHrefForSchemeCheck(href: string): string {
+  let current = href;
+
+  // Decode minimal set of HTML entities (numeric + a few named) to prevent encoded-scheme bypasses.
+  current = current.replace(/&#x([0-9a-fA-F]+);?/g, (_m, hex: string) => {
+    const codePoint = Number.parseInt(hex, 16);
+    if (!Number.isFinite(codePoint)) return '';
+    return String.fromCodePoint(codePoint);
+  });
+
+  current = current.replace(/&#(\d+);?/g, (_m, dec: string) => {
+    const codePoint = Number.parseInt(dec, 10);
+    if (!Number.isFinite(codePoint)) return '';
+    return String.fromCodePoint(codePoint);
+  });
+
+  current = current
+    .replace(/&colon;?/gi, ':')
+    .replace(/&tab;?/gi, '\t')
+    .replace(/&newline;?/gi, '\n');
+
+  // Decode percent encodings. Loop a couple times to catch common double-encoding patterns.
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      current = decodeURIComponent(current);
+    } catch {
+      break;
+    }
+  }
+
+  return current.trim().toLowerCase();
 }
 
 /**

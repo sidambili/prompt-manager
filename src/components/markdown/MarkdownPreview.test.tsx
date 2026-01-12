@@ -170,6 +170,32 @@ describe('MarkdownPreview', () => {
     expect(container.textContent).toContain('Bad');
   });
 
+  it('blocks percent-encoded javascript: scheme bypasses', () => {
+    const { container } = render(
+      <MarkdownPreview
+        content={'[Bad](java%73cript:alert(1))'}
+        id="md-preview-9b"
+      />
+    );
+
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.querySelector('a[href]')).toBeNull();
+    expect(container.textContent).toContain('Bad');
+  });
+
+  it('blocks HTML-entity javascript: scheme bypasses', () => {
+    const { container } = render(
+      <MarkdownPreview
+        content={'[Bad](jav&#x61;script:alert(1))'}
+        id="md-preview-9c"
+      />
+    );
+
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.querySelector('a[href]')).toBeNull();
+    expect(container.textContent).toContain('Bad');
+  });
+
   it('renders internal links without forcing target _blank', () => {
     const { container } = render(
       <MarkdownPreview content={'[Internal](/login)'} id="md-preview-10" />
