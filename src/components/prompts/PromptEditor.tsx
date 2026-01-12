@@ -4,38 +4,22 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Loader2,
   Save,
-  X,
   Home,
-  Globe,
-  Lock,
   Check,
-  GitFork,
   Trash2,
 } from 'lucide-react';
 import {
@@ -53,8 +37,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { slugify, buildSlugId } from '@/lib/slug';
-import { cn } from '@/lib/utils';
 import { normalizeVisibility } from '@/lib/visibility';
+
+import { MarkdownPreview } from '@/components/markdown/MarkdownPreview';
 
 import { PromptVariables } from './editor/PromptVariables';
 import { PromptSettings } from './editor/PromptSettings';
@@ -138,7 +123,7 @@ type PromptEditorProps = {
   ownerId: string;
 };
 
-export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
+export default function PromptEditor({ prompt }: PromptEditorProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -164,7 +149,6 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
   });
 
   const watchedContent = form.watch('content');
-  const watchedTitle = form.watch('title');
   const watchedCommitMessage = form.watch('commit_message');
 
   const variables = useMemo(() => {
@@ -419,7 +403,7 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                       className="h-9 px-0 rounded-sm border-b-2 border-transparent data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:bg-transparent text-xs font-semibold uppercase tracking-wider transition-all"
                       id="tab-preview"
                     >
-                      Output
+                      Preview
                     </TabsTrigger>
                   </TabsList>
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-brand/5 border border-brand/10" id="editing-indicator">
@@ -461,16 +445,17 @@ export default function PromptEditor({ prompt, ownerId }: PromptEditorProps) {
                     className="min-h-[500px] rounded-xl border bg-muted/30 p-6"
                     id="preview-view-content"
                   >
-                    <pre
-                      className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/90"
-                      id="preview-text"
-                    >
-                      {filledOutput || (
-                        <span className="text-muted-foreground italic">
-                          No output generated yet.
-                        </span>
-                      )}
-                    </pre>
+                    {filledOutput ? (
+                      <MarkdownPreview
+                        content={filledOutput}
+                        className="text-sm leading-relaxed text-foreground/90"
+                        id="preview-text"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground italic" id="preview-text-empty">
+                        No output generated yet.
+                      </span>
+                    )}
                   </div>
                   <div className="mt-4 flex justify-between items-center bg-card/50 border rounded-sm p-3" id="preview-footer">
                     <div className="text-[11px] text-muted-foreground" id="preview-stats">
