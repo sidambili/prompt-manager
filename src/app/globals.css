@@ -183,6 +183,23 @@
   .pm-markdown ol {
     margin: 0.75em 0;
     padding-left: 1.25rem;
+    list-style-position: outside;
+  }
+
+  .pm-markdown ul {
+    list-style-type: disc;
+  }
+
+  .pm-markdown ol {
+    list-style-type: decimal;
+  }
+
+  .pm-markdown ul ul {
+    list-style-type: circle;
+  }
+
+  .pm-markdown ul ul ul {
+    list-style-type: square;
   }
 
   .pm-markdown li {

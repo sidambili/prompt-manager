@@ -92,6 +92,36 @@ describe('MarkdownPreview', () => {
     expect(container.textContent).toContain('2');
   });
 
+  it('renders unordered and ordered lists as list elements', () => {
+    const markdown = [
+      '### Unordered',
+      '- Item A',
+      '- Item B',
+      '  - Nested B.1',
+      '  - Nested B.2',
+      '',
+      '### Ordered',
+      '1. Step one',
+      '2. Step two',
+      '3. Step three',
+    ].join('\n');
+
+    const { container } = render(
+      <MarkdownPreview content={markdown} id="md-preview-lists" />
+    );
+
+    const unordered = container.querySelectorAll('ul');
+    const ordered = container.querySelectorAll('ol');
+    expect(unordered.length).toBeGreaterThan(0);
+    expect(ordered.length).toBeGreaterThan(0);
+
+    const items = container.querySelectorAll('li');
+    expect(items.length).toBeGreaterThanOrEqual(5);
+    expect(container.textContent).toContain('Item A');
+    expect(container.textContent).toContain('Nested B.1');
+    expect(container.textContent).toContain('Step three');
+  });
+
   it('does not interpret raw HTML as HTML', () => {
     const { container } = render(
       <MarkdownPreview

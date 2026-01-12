@@ -187,6 +187,22 @@ export interface MarkdownPreviewProps {
 export function MarkdownPreview({ content, className, id }: MarkdownPreviewProps) {
   const components: Components = {
     img: () => null,
+    ul: ({ children, ...props }) => (
+      <ul
+        {...props}
+        className={cn('my-3 list-disc pl-5', props.className)}
+      >
+        {children}
+      </ul>
+    ),
+    ol: ({ children, ...props }) => (
+      <ol
+        {...props}
+        className={cn('my-3 list-decimal pl-5', props.className)}
+      >
+        {children}
+      </ol>
+    ),
     a: ({ href, children, ...props }) => {
       if (!href) {
         return <span>{children}</span>;
